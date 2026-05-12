@@ -533,12 +533,28 @@ embeddings.db</code></pre>
 
       </div>
 
+      <!-- Sidecar — hangs off the Vault. Optional fourth piece. -->
+      <div class="sys-sidecar" aria-label="Embedding server, an optional sidecar that hangs off the vault">
+        <div class="sys-sidecar-stem" aria-hidden="true">
+          <span class="sys-sidecar-label">indexes notes</span>
+        </div>
+        <figure class="sys-node sys-embed-node">
+          <p class="caps">Embedding server <span class="sys-tag-opt">optional</span></p>
+          <div class="sys-mini embed-mini" aria-hidden="true">
+            <span class="em-row"><span class="em-port">:5817</span> <span class="em-svc">embed_server</span></span>
+            <span class="em-row"><span class="am-dot">›</span> <span class="mono">embeddings.db</span> (sqlite-vec)</span>
+            <span class="em-row"><span class="am-dot">›</span> models on disk</span>
+            <span class="em-row"><span class="am-dot">›</span> called by Viewer + Librarian</span>
+          </div>
+          <p class="sys-role">background daemon · launchd</p>
+        </figure>
+      </div>
+
       <p class="body sys-caption">
         The contract between Viewer and Librarian is the filesystem — nothing
-        else. The embedding server is a sidecar HTTP service on
-        <span class="mono">localhost:5817</span>; install it if you want
-        semantic search, skip it otherwise. The vault is independent of all
-        three.
+        else. The embedding server hangs off the vault to power semantic
+        search; skip it and keyword search still works. Either surface can be
+        swapped without breaking the other.
       </p>
     </section>
 

@@ -1951,6 +1951,68 @@ footer {
   margin-bottom: 0.2rem;
 }
 
+/* -------- diagram sidecar (embedding server, hung off the vault) -------- */
+.sys-sidecar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  max-width: 24rem;
+  width: 100%;
+}
+.sys-sidecar-stem {
+  height: 2.75rem;
+  border-left: 1.5px dashed var(--ink-30);
+  position: relative;
+  margin: 0;
+}
+.sys-sidecar-label {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  margin-left: 0.55rem;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+}
+.sys-embed-node {
+  background: var(--panel);
+  border: 1px dashed var(--ink-30);
+  border-radius: 3px;
+  padding: 0.85rem 1rem 0.75rem;
+  width: 100%;
+  min-height: 0;
+}
+.sys-embed-node .caps { margin-bottom: 0.55rem; }
+.sys-embed-node .sys-role { margin-top: 0.6rem; }
+
+.embed-mini {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.6rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--backdrop);
+}
+.em-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+.em-port {
+  font-weight: 700;
+  color: var(--accent);
+}
+.em-svc { color: var(--ink); }
+
 /* -------- diagram req / opt badges -------- */
 .sys-tag-req,
 .sys-tag-opt {
