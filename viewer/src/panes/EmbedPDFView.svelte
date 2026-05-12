@@ -34,7 +34,7 @@
     GlobalPointerProvider,
     PagePointerProvider,
   } from "@embedpdf/plugin-interaction-manager/svelte";
-  import { ZoomMode, ZoomPluginPackage } from "@embedpdf/plugin-zoom/svelte";
+  import { ZoomMode, ZoomPluginPackage, ZoomGestureWrapper } from "@embedpdf/plugin-zoom/svelte";
   import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/svelte";
   import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/svelte";
   import { SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/svelte";
@@ -47,7 +47,6 @@
   import { HistoryPluginPackage } from "@embedpdf/plugin-history/svelte";
 
   import EmbedPdfToolbar from "./EmbedPdfToolbar.svelte";
-  import EmbedWheelZoom from "./EmbedWheelZoom.svelte";
   import EmbedHighlightSelectionMenu from "./EmbedHighlightSelectionMenu.svelte";
   import EmbedPageAnnotations from "./EmbedPageAnnotations.svelte";
   import EmbedAnnotationKeybinds from "./EmbedAnnotationKeybinds.svelte";
@@ -215,7 +214,7 @@
                   <RendererRegistryProvider>
                     <EmbedAnnotationKeybinds />
                     <GlobalPointerProvider documentId={activeDocumentId}>
-                      <EmbedWheelZoom documentId={activeDocumentId}>
+                      <ZoomGestureWrapper documentId={activeDocumentId}>
                       <Viewport class="ep-viewport" documentId={activeDocumentId}>
                         <Scroller documentId={activeDocumentId}>
                           {#snippet renderPage(page)}
@@ -271,7 +270,7 @@
                           {/snippet}
                         </Scroller>
                       </Viewport>
-                      </EmbedWheelZoom>
+                      </ZoomGestureWrapper>
                     </GlobalPointerProvider>
                   </RendererRegistryProvider>
                 </div>
