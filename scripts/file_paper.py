@@ -44,7 +44,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from doi2bib import fetch_metadata, fetch_openalex_abstract, make_bibtex, strip_html  # noqa: E402
 from build_library_bib import build as build_library_bib  # noqa: E402
 
-VAULT_ROOT = Path(__file__).resolve().parent.parent
+VAULT_ROOT = Path(
+    os.environ.get("LITERATURE_VAULT")
+    or Path(__file__).absolute().parent.parent
+)
 INDEX_PATH = VAULT_ROOT / "index.json"
 BIBFILES = VAULT_ROOT / "Bibfiles"
 PAPERNOTES = VAULT_ROOT / "PaperNotes"

@@ -17,6 +17,7 @@ a different registered model — the corpus must already be embedded
 under that model (run `embed_corpus.py --model X` first).
 """
 
+import os
 import argparse
 import array
 import json
@@ -30,7 +31,10 @@ import sqlite_vec
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _embed_client import embed as embed_remote  # noqa: E402
 
-VAULT_ROOT = Path(__file__).resolve().parent.parent
+VAULT_ROOT = Path(
+    os.environ.get("LITERATURE_VAULT")
+    or Path(__file__).absolute().parent.parent
+)
 DB_PATH = VAULT_ROOT / "embeddings.db"
 CONFIG_PATH = Path(__file__).resolve().parent / "embed_models.json"
 

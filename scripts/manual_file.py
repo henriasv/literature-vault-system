@@ -32,6 +32,7 @@ header — that's rewritten to the canonical key so the .bib's @type
 key always matches the filename and the index.
 """
 
+import os
 import argparse
 import datetime as dt
 import hashlib
@@ -51,7 +52,10 @@ from doi2bib import (  # noqa: E402
 )
 from build_library_bib import build as build_library_bib  # noqa: E402
 
-VAULT_ROOT = Path(__file__).resolve().parent.parent
+VAULT_ROOT = Path(
+    os.environ.get("LITERATURE_VAULT")
+    or Path(__file__).absolute().parent.parent
+)
 INDEX_PATH = VAULT_ROOT / "index.json"
 BIBFILES = VAULT_ROOT / "Bibfiles"
 PAPERNOTES = VAULT_ROOT / "PaperNotes"

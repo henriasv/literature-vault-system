@@ -24,6 +24,7 @@ note_path, bib_path, pdf_path}`. Exits 0 on success, non-zero on error
 (stderr carries the reason).
 """
 
+import os
 import argparse
 import json
 import re
@@ -46,7 +47,10 @@ from file_paper import (  # noqa: E402
 )
 from build_library_bib import build as build_library_bib  # noqa: E402
 
-VAULT_ROOT = Path(__file__).resolve().parent.parent
+VAULT_ROOT = Path(
+    os.environ.get("LITERATURE_VAULT")
+    or Path(__file__).absolute().parent.parent
+)
 PAPERNOTES = VAULT_ROOT / "PaperNotes"
 BIBFILES = VAULT_ROOT / "Bibfiles"
 PDFS = VAULT_ROOT / "PDFs"

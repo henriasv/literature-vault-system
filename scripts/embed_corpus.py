@@ -22,6 +22,7 @@ Usage:
     embed_corpus.py --force          # re-embed even if hash matches
 """
 
+import os
 import argparse
 import array
 import datetime as dt
@@ -38,7 +39,10 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _embed_client import embed as embed_remote, health as server_health  # noqa: E402
 
-VAULT_ROOT = Path(__file__).resolve().parent.parent
+VAULT_ROOT = Path(
+    os.environ.get("LITERATURE_VAULT")
+    or Path(__file__).absolute().parent.parent
+)
 PAPERNOTES = VAULT_ROOT / "PaperNotes"
 DB_PATH = VAULT_ROOT / "embeddings.db"
 CONFIG_PATH = Path(__file__).resolve().parent / "embed_models.json"

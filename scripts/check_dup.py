@@ -17,13 +17,17 @@ Output: JSON {"citekey": "...", "matched_field": "..."} on hit,
         {"citekey": null} on miss. Always exits 0.
 """
 
+import os
 import argparse
 import json
 import sys
 from pathlib import Path
 
 
-VAULT_ROOT = Path(__file__).resolve().parent.parent
+VAULT_ROOT = Path(
+    os.environ.get("LITERATURE_VAULT")
+    or Path(__file__).absolute().parent.parent
+)
 INDEX_PATH = VAULT_ROOT / "index.json"
 
 
