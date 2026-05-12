@@ -1,0 +1,22 @@
+{
+  "mcpServers": {},
+  "packages": {
+    "apt": [],
+    "npm": []
+  },
+  "additionalMounts": [
+    {
+      "hostPath": "{{VAULT_PATH}}",
+      "containerPath": "vault",
+      "readonly": false
+    },
+    {
+      "hostPath": "{{SYSTEM_PATH}}",
+      "containerPath": "system",
+      "readonly": true
+    }{{PDFS_MOUNT}}
+  ],
+  "skills": "all",
+  "groupName": "{{GROUP_NAME}}",
+  "assistantName": "LiteratureAssistant"
+}

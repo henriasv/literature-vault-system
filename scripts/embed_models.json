@@ -1,0 +1,19 @@
+{
+  "default": "nemotron-8b",
+  "_comment": "Set 'default' to the model id the agent uses without --model. Add a model: drop weights in Models/<dir>/, append an entry, run embed_corpus.py --model <id>.",
+  "models": {
+    "gemma": {
+      "path": "Models/embeddinggemma-300m",
+      "dim": 768,
+      "doc_prompt": "document",
+      "query_prompt": "query"
+    },
+    "nemotron-8b": {
+      "path": "Models/llama-embed-nemotron-8b",
+      "dim": 4096,
+      "doc_prompt": "document",
+      "query_prompt": "query",
+      "trust_remote_code": true
+    }
+  }
+}

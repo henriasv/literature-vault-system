@@ -1,0 +1,131 @@
+/*
+ * Editorial / vault aesthetic — color tokens and font stacks lifted from
+ * the design HTML (B _ Editorial Library _ masthead _ numbered index.html).
+ * Cream surfaces, near-black warm fg, rust burgundy accent, Source Serif 4
+ * for content, system sans for chrome labels.
+ */
+:root {
+  color-scheme: light;
+
+  /* Tokens lifted directly from direction-b.jsx (B_PALETTE):
+   * - panels (left list, right notes) are pure white,
+   * - bg (middle PDF backdrop) is the warm off-white,
+   * - panelAlt is the soft cream used for active rows / tab strips. */
+  --panel: #ffffff;            /* B_PALETTE.panel */
+  --panel-alt: #f6f1e6;        /* B_PALETTE.panelAlt */
+  --backdrop: #fcfaf5;          /* B_PALETTE.bg — off-white paper */
+  --recess: #e6dfc8;           /* warm-gray window gutter behind the cards */
+
+  --fg: #1a1612;               /* B_PALETTE.ink */
+  --ink: #1a1612;
+  --ink-70: rgba(26, 22, 18, 0.7);
+  --ink-50: rgba(26, 22, 18, 0.5);
+  --ink-30: rgba(26, 22, 18, 0.3);
+  --ink-12: rgba(26, 22, 18, 0.12);
+  --ink-07: rgba(26, 22, 18, 0.07);
+  --divider: rgba(26, 22, 18, 0.14);
+
+  --accent: #7a3a14;           /* B_PALETTE.accent — burnt umber */
+  --accent-soft: rgba(122, 58, 20, 0.08);
+  --accent-mid: rgba(122, 58, 20, 0.16);
+  --accent-bright: #b03020;
+  --warning: #a05a18;
+  --drop-soft: rgba(122, 58, 20, 0.10);
+
+  /* Traffic-light clearance: macOS Overlay titleBarStyle keeps the three
+     window controls at the top-left of the window, ~12px from each edge
+     and ~70px wide. Leave this much padding-left in the topmost strip so
+     content doesn't slide under them. */
+  --tl-pad: 78px;
+
+  /* legacy aliases used elsewhere in the codebase */
+  --surface: var(--panel);
+  --surface-soft: var(--panel-alt);
+  --surface-deep: #f0e8d8;
+  --surface-recess: var(--recess);
+  --fg-soft: #29261b;
+  --muted: var(--ink-50);
+  --muted-strong: var(--ink-70);
+  --muted-faint: var(--ink-30);
+  --border: var(--ink-12);
+  --border-strong: rgba(26, 22, 18, 0.18);
+  --border-rule: var(--ink);
+  --hover: rgba(26, 22, 18, 0.05);
+  --bg: var(--panel);
+
+  --serif: "Source Serif 4", "Source Serif Pro", "Iowan Old Style", "Hoefler Text", Georgia, serif;
+  --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--fg);
+  background: var(--recess);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Letter-spaced sans caps: THE VAULT · NO. 102, ENTRY · NO. 001, FIT, etc. */
+.caps {
+  font-family: var(--sans);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted-strong);
+  font-weight: 600;
+}
+.caps strong {
+  color: var(--fg);
+  font-weight: 700;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--hover);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input[type="text"], input[type="search"], input[type="number"] {
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 5px 8px;
+}
+input[type="text"]:focus, input[type="search"]:focus, input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}

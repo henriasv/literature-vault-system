@@ -1,0 +1,22 @@
+# Viewer build artefacts
+viewer/node_modules/
+viewer/dist/
+viewer/src-tauri/target/
+viewer/.svelte-kit/
+
+# Python caches
+__pycache__/
+*.pyc
+.uv-cache/
+
+# macOS
+.DS_Store
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# Local logs
+logs/
+*.log
