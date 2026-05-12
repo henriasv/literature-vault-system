@@ -307,22 +307,18 @@
                                   documentId={activeDocumentId}
                                   pageIndex={page.pageIndex}
                                 />
-                                <!-- Renders highlights from state.byUid so they
-                                     re-appear on reload, and shows handles when
-                                     an existing annotation is selected. The
-                                     wrapper pulls scale from useZoom because
-                                     the Scroller's snippet param doesn't expose
-                                     it — passing scale=1 leaves overlays
-                                     drifted at any zoom != 100%. The
-                                     text-selection menu (for creating new
-                                     highlights) stays on SelectionLayer
-                                     below. -->
-                                <EmbedPageAnnotations
-                                  documentId={activeDocumentId}
-                                  pageIndex={page.pageIndex}
-                                  pageWidth={page.width}
-                                  pageHeight={page.height}
-                                />
+                                <!-- SelectionLayer renders FIRST so that the
+                                     AnnotationLayer below sits on top in DOM
+                                     stacking order. That keeps clicks on a
+                                     sticky-note icon reaching the renderer's
+                                     onClick (→ select annotation → drag);
+                                     otherwise SelectionLayer's pointer plumbing
+                                     captures the click first and the user sees
+                                     a text-selection drag instead. The
+                                     selection-rect highlights inside this layer
+                                     all use pointer-events:none so swapping
+                                     order doesn't break text-select-to-
+                                     highlight. -->
                                 <SelectionLayer
                                   documentId={activeDocumentId}
                                   pageIndex={page.pageIndex}
@@ -334,6 +330,17 @@
                                     />
                                   {/snippet}
                                 </SelectionLayer>
+                                <!-- AnnotationLayer = Annotations + TextMarkup
+                                     + AnnotationPaintLayer; the last is what
+                                     wires per-tool click-to-create (sticky
+                                     note's `textComment`). Mounted on top so
+                                     selecting / dragging an existing
+                                     annotation wins over the text-select
+                                     pointer plumbing in SelectionLayer above. -->
+                                <EmbedPageAnnotations
+                                  documentId={activeDocumentId}
+                                  pageIndex={page.pageIndex}
+                                />
                               </PagePointerProvider>
                             </div>
                           {/snippet}

@@ -3,23 +3,27 @@
   the text-selection menu's shape (same MenuWrapperProps contract) so
   EmbedPDF can position it.
 
-  For highlights: shows the captured excerpt (read-only, from
-  `contents`) and a textarea bound to the user's freeform comment,
-  stored on the annotation under `custom.comment`. The PDF spec
-  reserves `custom` for non-standard payload and EmbedPDF round-trips
-  it through import/export untouched, so the comment lives alongside
-  the annotation in `Annotations/{citekey}.json` instead of leaking
-  into the .md note.
+  Two annotation kinds funnel through this menu:
 
-  Enter saves and closes the menu (commits + deselects); Shift+Enter
-  inserts a newline; Esc reverts the draft. Saving also runs on blur
-  as a safety net. Delete is styled as the secondary/destructive
-  escape hatch.
+    HIGHLIGHT: `contents` carries the highlighted excerpt (captured at
+      creation time), shown read-only at the top of the popover. The
+      user's freeform comment lives in `custom.comment` — a non-standard
+      payload the PDF spec leaves under `custom` and EmbedPDF preserves
+      end-to-end through import/export, so the comment lives in the
+      sidecar JSON, not the .md note.
+
+    TEXT (sticky note): `contents` IS the note body (PDF spec). No
+      excerpt is shown; the textarea is bound to `contents` directly.
+
+  Enter saves and closes the menu (commit + deselect); Shift+Enter
+  inserts a newline; Esc reverts. Save-on-blur is a safety net. Delete
+  is styled as the secondary/destructive escape hatch.
 -->
 <script lang="ts">
   import { useAnnotationCapability } from "@embedpdf/plugin-annotation/svelte";
   import type { MenuWrapperProps } from "@embedpdf/utils/svelte";
   import type { Rect } from "@embedpdf/models";
+  import { PdfAnnotationSubtype } from "@embedpdf/models";
   import type { AnnotationSelectionContext } from "@embedpdf/plugin-annotation/svelte";
 
   type Props = {
@@ -33,9 +37,16 @@
 
   const annotation = useAnnotationCapability();
 
-  const excerpt = $derived<string>(context.annotation.object.contents ?? "");
+  const isSticky = $derived(
+    context.annotation.object.type === PdfAnnotationSubtype.TEXT,
+  );
+  const excerpt = $derived<string>(
+    isSticky ? "" : context.annotation.object.contents ?? "",
+  );
   const initialComment = $derived<string>(
-    (context.annotation.object.custom as { comment?: string } | undefined)?.comment ?? "",
+    isSticky
+      ? context.annotation.object.contents ?? ""
+      : (context.annotation.object.custom as { comment?: string } | undefined)?.comment ?? "",
   );
 
   /* Local draft. Reset whenever the *selected annotation* changes —
@@ -70,29 +81,64 @@
     if (!annProv || context.structurallyLocked) return;
     const trimmed = draft.trim();
     if (trimmed === initialComment.trim()) return;
-    const prev = (context.annotation.object.custom ?? {}) as Record<string, unknown>;
-    const nextCustom: Record<string, unknown> = { ...prev };
-    if (trimmed) nextCustom.comment = trimmed;
-    else delete nextCustom.comment;
-    annProv.updateAnnotation(context.pageIndex, context.annotation.object.id, {
-      custom: Object.keys(nextCustom).length > 0 ? nextCustom : undefined,
-      modified: new Date(),
-    });
+    const pageIndex = context.pageIndex;
+    const id = context.annotation.object.id;
+    if (isSticky) {
+      /* TEXT sticky note: contents IS the note body. */
+      annProv.updateAnnotation(pageIndex, id, {
+        contents: trimmed,
+        modified: new Date(),
+      });
+    } else {
+      /* Highlight: comment goes under custom.comment; contents holds
+       * the excerpt and stays untouched here. */
+      const prev = (context.annotation.object.custom ?? {}) as Record<string, unknown>;
+      const nextCustom: Record<string, unknown> = { ...prev };
+      if (trimmed) nextCustom.comment = trimmed;
+      else delete nextCustom.comment;
+      annProv.updateAnnotation(pageIndex, id, {
+        custom: Object.keys(nextCustom).length > 0 ? nextCustom : undefined,
+        modified: new Date(),
+      });
+    }
+  }
+
+  /* Escape "gets out" of the popover entirely:
+   *   - revert the draft (don't commit half-typed text)
+   *   - blur the textarea + deselect the annotation (closes this menu)
+   *   - deactivate any active tool (so the user isn't still in
+   *     sticky-note placement mode and dropping notes on the next
+   *     click — closes the loop for "I'm done annotating right now")
+   * We listen at the window level so Escape works whether focus is in
+   * the textarea or somewhere else in the popover. */
+  function escape() {
+    draft = initialComment;
+    textareaEl?.blur();
+    annotation.provides?.deselectAnnotation();
+    annotation.provides?.setActiveTool(null);
   }
 
   function onKeydown(e: KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
       e.preventDefault();
       commitIfChanged();
-      (e.currentTarget as HTMLTextAreaElement).blur();
-      annotation.provides?.deselectAnnotation();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      draft = initialComment;
-      (e.currentTarget as HTMLTextAreaElement).blur();
+      textareaEl?.blur();
       annotation.provides?.deselectAnnotation();
     }
+    /* Escape is handled at the window level below; left here only to
+     * absorb the textarea's default behaviour. */
   }
+
+  $effect(() => {
+    if (!selected) return;
+    function onWindowKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      escape();
+    }
+    window.addEventListener("keydown", onWindowKey, { capture: true });
+    return () => window.removeEventListener("keydown", onWindowKey, { capture: true });
+  });
 
   function remove() {
     const annProv = annotation.provides;
@@ -117,7 +163,9 @@
       {/if}
       <textarea
         class="comment"
-        placeholder="Add a comment…  (Enter to save, Shift+Enter for newline)"
+        placeholder={isSticky
+          ? "Write a note…  (Enter to save, Shift+Enter for newline)"
+          : "Add a comment…  (Enter to save, Shift+Enter for newline)"}
         rows="2"
         bind:value={draft}
         bind:this={textareaEl}
@@ -129,10 +177,10 @@
           type="button"
           class="del"
           onclick={remove}
-          title="Delete this highlight"
-          aria-label="Delete this highlight"
+          title={isSticky ? "Delete this sticky note" : "Delete this highlight"}
+          aria-label={isSticky ? "Delete this sticky note" : "Delete this highlight"}
         >
-          Delete highlight
+          {isSticky ? "Delete note" : "Delete highlight"}
         </button>
       </div>
     </div>

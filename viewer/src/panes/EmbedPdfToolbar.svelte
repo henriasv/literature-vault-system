@@ -15,7 +15,6 @@
   import { useSearch } from "@embedpdf/plugin-search/svelte";
   import { useAnnotation } from "@embedpdf/plugin-annotation/svelte";
   import { tabsState } from "../state/tabs.svelte";
-  import { HIGHLIGHT_COLORS, type HighlightColor } from "../lib/highlight-colors";
 
   type Props = { documentId: string };
   let { documentId }: Props = $props();
@@ -38,51 +37,47 @@
   const scroll = useScroll(() => documentId);
   const annotation = useAnnotation(() => documentId);
 
-  /* The annotation bar is a separate, toggleable strip — keeps the main
-   * reading toolbar uncluttered (cf. screenshot the user shared with
-   * everything jammed in one row). Open it with the ANNOTATE button. */
+  /* The annotation bar is a separate, toggleable strip. Highlights are
+   * created post-text-select via the in-PDF selection menu, so the
+   * toolbar doesn't need highlight swatches; the only tool surfaced
+   * here is the sticky note: activate, then click anywhere on a page
+   * to drop a note (its comment editor opens immediately because
+   * EmbedPDF's `textComment` tool has `selectAfterCreate: true`). */
   let annotateOpen = $state(false);
-
-  /* Highlight tool — `currentHighlightColor` tracks which swatch is
-   * active in the annotation bar. Clicking a swatch activates EmbedPDF's
-   * highlight tool; clicking the active swatch again deactivates.
-   * Selecting text with the highlight tool active creates the
-   * annotation; the create-event listener below makes sure its colour
-   * matches the user's pick. */
-  let currentHighlightColor = $state<HighlightColor | null>(null);
-  function setHighlight(color: HighlightColor | null) {
-    if (color === currentHighlightColor) {
-      currentHighlightColor = null;
+  type ToolId = "textComment";
+  let activeToolId = $state<ToolId | null>(null);
+  function toggleTool(id: ToolId | null) {
+    if (id === activeToolId || id === null) {
+      activeToolId = null;
       annotation.provides?.setActiveTool(null);
     } else {
-      currentHighlightColor = color;
-      annotation.provides?.setActiveTool(
-        "highlight",
-        color ? { color } : undefined,
-      );
+      activeToolId = id;
+      annotation.provides?.setActiveTool(id);
     }
   }
 
-  /* If EmbedPDF doesn't honour the `context.color` we pass to
-   * `setActiveTool`, every fresh highlight comes out in the tool's
-   * default colour. This event listener fixes the color right after
-   * creation so the swatch the user clicked is the one that sticks. */
+  /* The textComment tool has `selectAfterCreate: true` but no
+   * `deactivateToolAfterCreate`, so after dropping a sticky note the
+   * tool stays active. That makes the *next* click on the page drop
+   * another sticky — including a click on the just-placed sticky to
+   * drag it. Auto-deactivate ourselves: one sticky per activation, so
+   * the user can immediately move/edit the new note. Re-click STICKY
+   * NOTE to drop another. */
   $effect(() => {
     const provides = annotation.provides;
     if (!provides) return;
     const off = provides.onAnnotationEvent((evt) => {
       if (evt.type !== "create") return;
-      const desired = untrack(() => currentHighlightColor);
-      if (!desired) return;
-      const ann = evt.annotation as { id?: string; color?: string };
-      if (!ann?.id || ann.color === desired) return;
-      provides.updateAnnotation(evt.pageIndex, ann.id, {
-        color: desired,
-        strokeColor: desired,
-      } as Parameters<typeof provides.updateAnnotation>[2]);
+      const ann = evt.annotation as { type?: number } | undefined;
+      if (!ann || ann.type !== 1 /* PdfAnnotationSubtype.TEXT */) return;
+      const current = untrack(() => activeToolId);
+      if (current !== "textComment") return;
+      activeToolId = null;
+      provides.setActiveTool(null);
     });
     return () => off?.();
   });
+
   const search = useSearch(() => documentId);
 
   /* Page navigation — scroll plugin owns current page + total pages.
@@ -369,33 +364,30 @@
        doesn't reflow / rescale the PDF below. -->
   {#if annotateOpen}
     <div class="annotate-row">
-      <span class="annotate-label">HIGHLIGHT</span>
-      {#each HIGHLIGHT_COLORS as color (color)}
-        <button
-          type="button"
-          class="swatch"
-          class:active={currentHighlightColor === color}
-          style:--swatch={color}
-          onclick={() => setHighlight(color)}
-          title="Highlight ({color}) — select text after activating"
-          aria-label="Highlight tool, {color}"
-          aria-pressed={currentHighlightColor === color}
-        ></button>
-      {/each}
+      <button
+        type="button"
+        class="btn tool"
+        class:active={activeToolId === "textComment"}
+        onclick={() => toggleTool("textComment")}
+        aria-pressed={activeToolId === "textComment"}
+        title="Click on the page to drop a sticky note"
+      >
+        STICKY NOTE
+      </button>
       <button
         class="btn off"
-        class:active={currentHighlightColor === null}
-        onclick={() => setHighlight(null)}
-        title="Turn highlight tool off"
+        class:active={activeToolId === null}
+        onclick={() => toggleTool(null)}
+        title="Turn tools off"
       >
         OFF
       </button>
       <span class="grow"></span>
       <span class="annotate-hint">
-        {#if currentHighlightColor}
-          Select text to highlight
+        {#if activeToolId === "textComment"}
+          Click on the page to drop a sticky note
         {:else}
-          Pick a color, then select text
+          To highlight, select text in the document. Pick a tool here to add a sticky note.
         {/if}
       </span>
     </div>
@@ -527,13 +519,6 @@
     background: var(--panel, #fff);
     box-shadow: 0 2px 8px -2px rgba(26, 22, 18, 0.12);
   }
-  .annotate-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    color: var(--ink-50, rgba(26, 22, 18, 0.5));
-    margin-right: 4px;
-  }
   .annotate-hint {
     font-family: var(--serif, "Source Serif 4", Georgia, serif);
     font-size: 12px;
@@ -553,27 +538,10 @@
     background: var(--ink-07, rgba(26, 22, 18, 0.07));
     color: var(--ink, #1a1612);
   }
-  .swatch {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 1px solid var(--ink-12, rgba(26, 22, 18, 0.18));
-    background: var(--swatch, #FFEB3B);
-    cursor: pointer;
-    padding: 0;
-    margin: 0;
-    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
-  }
-  .swatch:hover { transform: scale(1.12); border-color: var(--ink, #1a1612); }
-  .swatch.active {
-    border-color: var(--ink, #1a1612);
-    box-shadow: 0 0 0 2px var(--backdrop, #fcfaf5), 0 0 0 3px var(--ink, #1a1612);
-    transform: scale(1.05);
-  }
-  .swatch:focus-visible {
-    outline: 2px solid var(--accent, #7a3a14);
-    outline-offset: 2px;
+  .btn.tool { color: var(--ink, #1a1612); }
+  .btn.tool.active {
+    background: var(--ink, #1a1612);
+    color: var(--backdrop, #fcfaf5);
   }
   .kbd {
     font-size: 10px;
