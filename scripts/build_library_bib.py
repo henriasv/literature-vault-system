@@ -13,7 +13,10 @@ import sys
 from pathlib import Path
 
 
-VAULT_ROOT = Path(__file__).resolve().parent.parent
+VAULT_ROOT = Path(
+    os.environ.get("LITERATURE_VAULT")
+    or Path(__file__).absolute().parent.parent
+)
 
 
 def build() -> int:
