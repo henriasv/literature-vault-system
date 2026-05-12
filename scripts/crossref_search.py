@@ -26,13 +26,19 @@ Each candidate: {doi, title, first_author, year, type, score}.
 
 import argparse
 import json
+import os
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 
 API = "https://api.crossref.org/works"
-UA = "literature-librarian/1.0 (research; mailto:noreply@example.com)"
+
+# CrossRef polite-pool contact. Set CROSSREF_MAILTO=you@example.com in the
+# environment to opt into higher rate limits and let CrossRef reach you if
+# the scripts misbehave. Unset = public pool, no mailto advertised.
+_MAILTO = os.environ.get("CROSSREF_MAILTO", "").strip()
+UA = "literature-librarian/1.0 (research" + (f"; mailto:{_MAILTO}" if _MAILTO else "") + ")"
 
 
 def search(title: str | None = None, author: str | None = None,

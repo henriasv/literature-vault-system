@@ -120,10 +120,18 @@ if [[ -L scripts ]]; then
     [[ $ADOPT -eq 1 ]] && echo "  scripts symlink already correct"
   fi
 elif [[ -d scripts ]]; then
+  if [[ -e scripts.old ]]; then
+    echo "error: scripts.old already exists — remove or rename it before re-running" >&2
+    exit 1
+  fi
   echo "  scripts/ is a real directory — backing up to scripts.old/"
   mv scripts scripts.old
   ln -s "$SYSTEM_DIR/scripts" scripts
 elif [[ -e scripts ]]; then
+  if [[ -e scripts.old ]]; then
+    echo "error: scripts.old already exists — remove or rename it before re-running" >&2
+    exit 1
+  fi
   echo "  scripts exists as a non-directory file — backing up to scripts.old"
   mv scripts scripts.old
   ln -s "$SYSTEM_DIR/scripts" scripts

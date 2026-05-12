@@ -27,6 +27,7 @@ Usage:
 
 import argparse
 import json
+import os
 import re
 import sys
 import textwrap
@@ -34,6 +35,13 @@ import unicodedata
 import urllib.request
 import urllib.error
 from pathlib import Path
+
+# CrossRef polite-pool contact. Set CROSSREF_MAILTO=you@example.com in the
+# environment to opt into higher rate limits and let CrossRef / DataCite /
+# OpenAlex reach you if the scripts misbehave. Unset = public pool, no
+# mailto advertised.
+_MAILTO = os.environ.get("CROSSREF_MAILTO", "").strip()
+_UA = "doi2bib/1.0 (research" + (f"; mailto:{_MAILTO}" if _MAILTO else "") + ")"
 
 # ── Journal abbreviation map ─────────────────────────────────────────────────
 # CrossRef returns full journal names; we need short keys.
@@ -310,7 +318,7 @@ def fetch_crossref(doi: str) -> dict:
     """Fetch metadata from CrossRef for a given DOI."""
     url = f"https://api.crossref.org/works/{doi}"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "doi2bib/1.0 (research-llm-wiki; mailto:noreply@example.com)",
+        "User-Agent": _UA,
         "Accept": "application/json",
     })
     try:
@@ -341,7 +349,7 @@ def fetch_datacite(doi: str) -> dict:
     """
     url = f"https://api.datacite.org/dois/{doi}"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "doi2bib/1.0 (research-llm-wiki; mailto:noreply@example.com)",
+        "User-Agent": _UA,
         "Accept": "application/json",
     })
     try:
@@ -446,7 +454,7 @@ def fetch_openalex_abstract(doi: str) -> str:
     import urllib.parse
     url = f"https://api.openalex.org/works/https://doi.org/{urllib.parse.quote(doi)}"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "doi2bib/1.0 (research-llm-wiki; mailto:noreply@example.com)",
+        "User-Agent": _UA,
     })
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:

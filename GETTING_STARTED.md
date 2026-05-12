@@ -51,6 +51,22 @@ few paths in the install scripts (Homebrew's `uv`) assume `/opt/homebrew/`.
    agent. Install separately from
    [github.com/.../nanoclaw](https://github.com).
 
+### Optional: a CrossRef contact email
+
+The filing scripts (`doi2bib.py`, `crossref_search.py`) hit CrossRef,
+DataCite, and OpenAlex. CrossRef's "polite pool" gives higher rate
+limits to clients that advertise a real contact email. To opt in,
+export your email before running the scripts (or stash it in your
+shell rc):
+
+```bash
+export CROSSREF_MAILTO="you@example.com"
+```
+
+Without this, the scripts fall through to CrossRef's public pool —
+they still work, just with stricter throttling. The variable is read
+fresh on each script invocation; no rebuild needed.
+
 ### A note on the per-machine setup state
 
 The setup scripts (`init-vault.sh`, `configure-viewer.sh`,

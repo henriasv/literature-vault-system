@@ -65,7 +65,7 @@ If you're touching X, look here:
 ## Architecture sketch
 
 ```
-┌─ macOS host (Henrik's M5) ──────────────────────────────────────────────┐
+┌─ macOS host ─────────────────────────────────────────────────────────────┐
 │                                                                          │
 │  Telegram ─────► nanoclaw orchestrator ─────► Docker container          │
 │                  (~/repos/nanoclaw)            (per-session, ephemeral) │
