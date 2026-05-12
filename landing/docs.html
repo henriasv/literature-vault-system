@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Literature Vault — Documentation</title>
-  <meta name="description" content="Technical reference for Literature Vault: on-disk layout, citekey algorithm, note frontmatter, collections, intake pipeline, and viewer architecture." />
+  <title>Documentation — Literature Vault</title>
+  <meta name="description" content="Documentation for Literature Vault — tutorial, how-to guides, reference, and explanation. Renders the docs/ folder directly." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,7 +21,7 @@
         <span class="masthead-eyebrow">Documentation</span>
         <span class="masthead-title">Literature Vault</span>
       </span>
-      <nav class="docs-topnav">
+      <nav class="docs-topnav" aria-label="Top">
         <a class="home" href="./index.html">Home</a>
         <a href="https://github.com/henriasv/literature-vault-system">GitHub</a>
       </nav>
@@ -30,375 +30,227 @@
 
   <div class="docs-shell">
 
-    <!-- table of contents -->
-    <aside class="docs-toc">
-      <p class="docs-toc-label">Contents</p>
-      <ol>
-        <li><a href="#layout">Vault layout</a></li>
-        <li><a href="#citekeys">Citation keys</a></li>
-        <li><a href="#frontmatter">Note frontmatter</a></li>
-        <li><a href="#collections">Collections</a></li>
-        <li><a href="#intake">Intake pipeline</a></li>
-        <li><a href="#embed">Embedding server</a></li>
-        <li><a href="#architecture">Viewer architecture</a></li>
-      </ol>
+    <aside class="docs-nav" aria-label="Documentation sections">
+      <p class="docs-nav-eyebrow">Browse</p>
+
+      <a class="docs-nav-link" href="#" data-route="">
+        <span class="caps">Start</span>
+        <span class="docs-nav-blurb">Index — where to go.</span>
+      </a>
+
+      <p class="docs-nav-group caps">Tutorial</p>
+      <ul>
+        <li><a href="#tutorial/getting-started" data-route="tutorial/getting-started">Getting started</a></li>
+      </ul>
+
+      <p class="docs-nav-group caps">How-to</p>
+      <ul>
+        <li><a href="#how-to/adopt-existing-papers" data-route="how-to/adopt-existing-papers">Adopt existing papers</a></li>
+        <li><a href="#how-to/install-the-librarian-agent" data-route="how-to/install-the-librarian-agent">Install the Librarian agent</a></li>
+        <li><a href="#how-to/install-the-embedding-server" data-route="how-to/install-the-embedding-server">Install the embedding server</a></li>
+        <li><a href="#how-to/connect-telegram" data-route="how-to/connect-telegram">Connect a Telegram bot</a></li>
+        <li><a href="#how-to/update-the-viewer" data-route="how-to/update-the-viewer">Update the Viewer</a></li>
+        <li><a href="#how-to/back-up-the-vault" data-route="how-to/back-up-the-vault">Back up the vault</a></li>
+        <li><a href="#how-to/use-with-obsidian" data-route="how-to/use-with-obsidian">Use with Obsidian</a></li>
+        <li><a href="#how-to/troubleshoot" data-route="how-to/troubleshoot">Troubleshoot</a></li>
+      </ul>
+
+      <p class="docs-nav-group caps">Reference</p>
+      <ul>
+        <li><a href="#reference/vault-layout" data-route="reference/vault-layout">Vault layout</a></li>
+        <li><a href="#reference/note-frontmatter" data-route="reference/note-frontmatter">Note frontmatter</a></li>
+        <li><a href="#reference/citation-keys" data-route="reference/citation-keys">Citation keys</a></li>
+        <li><a href="#reference/scripts" data-route="reference/scripts">Scripts</a></li>
+        <li><a href="#reference/viewer-architecture" data-route="reference/viewer-architecture">Viewer architecture</a></li>
+        <li><a href="#reference/agent" data-route="reference/agent">Librarian agent</a></li>
+        <li><a href="#reference/embedding-server" data-route="reference/embedding-server">Embedding server</a></li>
+      </ul>
+
+      <p class="docs-nav-group caps">Explanation</p>
+      <ul>
+        <li><a href="#explanation/two-surfaces-one-vault" data-route="explanation/two-surfaces-one-vault">Two surfaces, one vault</a></li>
+        <li><a href="#explanation/files-not-database" data-route="explanation/files-not-database">Files, not a database</a></li>
+        <li><a href="#explanation/citekeys-as-identifiers" data-route="explanation/citekeys-as-identifiers">Citekeys as identifiers</a></li>
+        <li><a href="#explanation/the-agent-pattern" data-route="explanation/the-agent-pattern">The agent pattern</a></li>
+      </ul>
+
+      <p class="docs-nav-group caps">Project</p>
+      <ul>
+        <li><a href="#known-limitations" data-route="known-limitations">Known limitations</a></li>
+      </ul>
+
+      <p class="docs-nav-foot">
+        Source on
+        <a href="https://github.com/henriasv/literature-vault-system/tree/main/docs">GitHub</a>.
+      </p>
     </aside>
 
-    <!-- main column -->
-    <main class="docs-main">
+    <main class="docs-main" id="docs-main">
+      <article class="docs-content" id="docs-content" aria-live="polite">
+        <p class="docs-loading">Loading…</p>
+      </article>
 
-      <h1>Literature Vault — Documentation</h1>
-      <p class="docs-subtitle">
-        The on-disk contract that the Viewer and the Librarian agent share,
-        the algorithms that produce it, and the stack the viewer is built on.
-        For installation, return to the <a href="./index.html#install">landing page</a>;
-        for the full architectural design rationale, see
-        <code>docs/DESIGN.md</code> in the repository.
+      <p class="docs-foot">
+        <a id="docs-edit-link" href="https://github.com/henriasv/literature-vault-system/tree/main/docs" target="_blank" rel="noopener">Edit on GitHub →</a>
       </p>
-
-      <!-- ============================================================== -->
-      <h2 id="layout"><span class="h2-num">01</span>Vault layout</h2>
-
-      <p>
-        The vault is an ordinary directory. Both surfaces — the macOS
-        Viewer and the Librarian agent — read and write the same files;
-        there is no database and no API between them. Filename equals
-        citekey for the three primary file types
-        (<code>.md</code>, <code>.bib</code>, <code>.pdf</code>), so a paper's
-        record can be reconstructed from any one of them.
-      </p>
-
-<pre><code>PaperNotes/{citekey}.md       <span class="dim">literature note (YAML + body)</span>
-Bibfiles/{citekey}.bib        <span class="dim">BibTeX, one per paper</span>
-PDFs/{citekey}.pdf            <span class="dim">the actual paper</span>
-SI/{citekey}-SI.pdf           <span class="dim">supplementary information</span>
-Annotations/{citekey}.json    <span class="dim">viewer highlights (EmbedPDF sidecar)</span>
-Inbox/                        <span class="dim">drop zone for new PDFs</span>
-Collections/{slug}/           <span class="dim">user-curated paper groupings</span>
-Projects/                     <span class="dim">curated topic notes (user-authored)</span>
-index.json                    <span class="dim">dedup index (sha256, DOI, arXiv)</span>
-library.bib                   <span class="dim">aggregated from Bibfiles/*</span>
-embeddings.db                 <span class="dim">sqlite-vec, regenerable</span>
-.embedding_models/{name}/     <span class="dim">model cache (gitignored, regenerable)</span></code></pre>
-
-      <h3>Who writes what</h3>
-      <p>
-        The Librarian writes every file type. The Viewer writes
-        <code>PaperNotes/</code>, <code>Collections/</code>, <code>Projects/</code>,
-        <code>Annotations/</code>, and <code>Inbox/</code> (when accepting a
-        drag-and-dropped PDF). The remaining files — <code>Bibfiles/</code>,
-        <code>index.json</code>, <code>library.bib</code>,
-        <code>embeddings.db</code> — are written only by the deterministic
-        scripts the agent invokes, never edited by hand.
-      </p>
-
-      <h3>Concurrency</h3>
-      <p>
-        Every script that modifies a shared file (notes, index, aggregated
-        bib) uses the tempfile-plus-rename pattern, so a crash mid-write
-        cannot leave partial state in the vault. The Viewer follows the
-        same convention for the files it owns.
-      </p>
-
-      <!-- ============================================================== -->
-      <h2 id="citekeys"><span class="h2-num">02</span>Citation keys</h2>
-
-      <p>
-        Citekeys are permanent. Once a paper has been filed under
-        a citekey, the key never changes — every other piece of state
-        (filename, bibliography entry, collection membership, embedding row)
-        is keyed off it.
-      </p>
-
-      <h3>Algorithm</h3>
-      <p>Given a DOI, the canonical citekey is:</p>
-
-<pre><code>key = "{author}{year}-{journal}-{doi_suffix}"</code></pre>
-
-      <ul>
-        <li><strong>author</strong> — first-author surname, Unicode-normalised, lowercased, restricted to <code>[a-z]</code>.</li>
-        <li><strong>year</strong> — CrossRef <code>published</code> / <code>published-print</code> / <code>issued</code>, first non-null.</li>
-        <li><strong>journal</strong> — short abbreviation from a curated map (<code>prl</code>, <code>jcp</code>, <code>natcommun</code>, …).</li>
-        <li><strong>doi_suffix</strong> — DOI tail (after the first <code>/</code>), slugified, with any redundant <code>{journal}-</code> prefix stripped.</li>
-      </ul>
-
-      <h3>Fallbacks</h3>
-      <p>
-        Papers without a DOI use the arXiv form
-        <code>{author}{year}-arxiv-{arxiv-slug}</code>. Books, theses, and
-        other pre-digital references fall back to a manual form
-        <code>{author}{year}-{short-title-slug}</code> minted by
-        <code>scripts/manual_file.py</code>.
-      </p>
-
-      <h3>Examples</h3>
-      <div class="docs-table">
-        <div class="docs-table-row docs-table-head">
-          <span>DOI / source</span>
-          <span>Citekey</span>
-        </div>
-        <div class="docs-table-row">
-          <span>10.1103/PhysRevLett.126.236001</span>
-          <span>cheng2021-prl-physrevlett-126-236001</span>
-        </div>
-        <div class="docs-table-row">
-          <span>10.1021/acs.jpclett.4c00605</span>
-          <span>stolte2024-jpcl-4c00605</span>
-        </div>
-        <div class="docs-table-row">
-          <span>10.1073/pnas.2501728122</span>
-          <span>juel2025-pnas-2501728122</span>
-        </div>
-        <div class="docs-table-row">
-          <span>10.1038/s41467-023-36329-y</span>
-          <span>musaelian2023-natcommun-s41467-023-36329-y</span>
-        </div>
-        <div class="docs-table-row">
-          <span>arXiv:2305.10141</span>
-          <span>musaelian2023-arxiv-2305-10141</span>
-        </div>
-      </div>
-
-      <p>
-        Reference implementation: <code>scripts/doi2bib.py:make_canonical_key</code>.
-        Full grammar: <code>docs/CITATION_KEYS.md</code>.
-      </p>
-
-      <!-- ============================================================== -->
-      <h2 id="frontmatter"><span class="h2-num">03</span>Note frontmatter</h2>
-
-      <p>
-        Every <code>PaperNotes/{citekey}.md</code> begins with a YAML
-        frontmatter block. The required fields are
-        <code>citekey</code>, <code>title</code>, <code>authors</code>,
-        <code>year</code>, <code>journal</code>, <code>doi</code>,
-        <code>arxiv_id</code>, <code>added</code>, and <code>sha256_pdf</code>;
-        an <code>abstract</code> block is included when available. Additional
-        fields may be added freely.
-      </p>
-
-<pre><code>---
-citekey: tromborg2011-prl-physrevlett-107-074301
-title: "Transition from static to kinetic friction…"
-authors:
-  - "Trømborg, Jørgen"
-  - "Scheibert, Julien"
-  - "Amundsen, David Skålid"
-  - "Thøgersen, Kjetil"
-  - "Malthe-Sørenssen, Anders"
-year: 2011
-journal: "Physical Review Letters"
-doi: 10.1103/PhysRevLett.107.074301
-arxiv_id: null
-added: 2026-04-22
-tags: ["friction", "rate-and-state"]
-sha256_pdf: 7e3d9a…
-abstract: |
-  We investigate the transition…
----</code></pre>
-
-      <h3>Body sections</h3>
-      <p>
-        The body below the frontmatter is free-form Markdown. Three
-        section headings are conventional and recognised by the scripts
-        and the agent:
-      </p>
-      <ul>
-        <li><code>## Why</code> — why the paper is in the library; short.</li>
-        <li><code>## Cleaned Notes</code> — synthesised summary, rewritten by the agent when raw notes change.</li>
-        <li><code>## Notes</code> — timestamped log appended by <code>append_note.py</code> (header format <code>### {ISO timestamp}</code>).</li>
-      </ul>
-      <p>
-        The Viewer preserves everything outside the frontmatter block
-        byte-for-byte, so co-editing the same notes from Obsidian or a
-        terminal editor is safe.
-      </p>
-
-      <h3>Tag conventions</h3>
-      <p>
-        Topic tags are lowercase snake_case (<code>friction</code>,
-        <code>ice_friction</code>, <code>mlip</code>). Citation-prep tags
-        use the <code>cite:</code> prefix (<code>cite:thesis-3</code>,
-        <code>cite:helfo-rebuttal</code>) — one per manuscript-in-progress,
-        removed when the manuscript is submitted. The Viewer surfaces
-        <code>cite:*</code> tags as a separate sidebar section so a
-        manuscript becomes a live view of its sources.
-      </p>
-
-      <!-- ============================================================== -->
-      <h2 id="collections"><span class="h2-num">04</span>Collections</h2>
-
-      <p>
-        Collections are user-curated groupings of papers. They are
-        distinct from frontmatter <code>tags:</code> — a paper does not get
-        tagged <code>thesis-3</code> to belong to a thesis-3 collection;
-        instead its citekey is listed in that collection's
-        <code>index.md</code>. Membership is always explicit; sub-collections
-        nest.
-      </p>
-
-      <h3>Directory format</h3>
-      <p>
-        Every collection is a directory under <code>Collections/</code>
-        with an <code>index.md</code> inside. The directory name is the
-        collection's slug; the relative path from <code>Collections/</code>
-        is the collection's full identifier (e.g.
-        <code>drafts/thesis-3</code>).
-      </p>
-
-<pre><code>Collections/drafts/thesis-3/index.md
-
----
-name: thesis-3
-slug: drafts/thesis-3
-description: Confined water in clay layers …
-created: 2026-04-12T11:02:00+02:00
-updated: 2026-05-07T15:20:00+02:00
----
-
-# Confined water in clay layers
-&lt;free-form prose, never rewritten&gt;
-
-## Papers
-- marry2018-jpcc-…
-- guren2021-geca-… — table 3 has the diffusion data
-- claverie2022-cacr-…</code></pre>
-
-      <p>
-        The <code>## Papers</code> section is the only part of the file
-        the scripts and agent write to. Bullets are plain citekeys
-        (<code>- {citekey}</code>); an optional inline annotation may
-        follow an em-dash. Anything before <code>## Papers</code> (the H1,
-        free-form prose) and anything after it is preserved byte-for-byte.
-      </p>
-
-      <h3>Operations</h3>
-      <ul>
-        <li><strong>Create</strong>: <code>mkdir -p Collections/{slug}</code>, write <code>index.md</code> with frontmatter and an empty <code>## Papers</code> section. Set <code>created</code> and <code>updated</code> to the current ISO datetime with offset.</li>
-        <li><strong>Add a paper</strong>: append <code>- {citekey}</code> to <code>## Papers</code> if not already present; bump <code>updated</code>.</li>
-        <li><strong>Remove a paper</strong>: delete the matching bullet; bump <code>updated</code>.</li>
-        <li><strong>Rename / move</strong>: <code>mv Collections/{old} Collections/{new}</code> and rewrite the <code>slug:</code> and <code>name:</code> fields in the moved <code>index.md</code>.</li>
-      </ul>
-      <p>All writes go through a tempfile in the same directory followed by <code>os.replace</code>.</p>
-
-      <!-- ============================================================== -->
-      <h2 id="intake"><span class="h2-num">05</span>Intake pipeline</h2>
-
-      <p>
-        Filing a new PDF is a deterministic, atomic transaction
-        implemented in <code>scripts/file_paper.py</code>. The same script is
-        invoked by the Librarian (Telegram intake) and by the Viewer's
-        manual-entry dialog (offline intake).
-      </p>
-
-      <ol>
-        <li>Compute the SHA-256 of the PDF.</li>
-        <li>Extract DOI / arXiv ID from the PDF: metadata → text → raw bytes (three-tier fallback in <code>extract_ids.py</code>).</li>
-        <li>If no identifier was found: search CrossRef by title and author (<code>crossref_search.py</code>); the operator confirms a match.</li>
-        <li>Fetch CrossRef metadata; mint the canonical citekey; build the BibTeX entry.</li>
-        <li>Duplicate-check against <code>index.json</code> by SHA-256, DOI, arXiv ID, and citekey.</li>
-        <li>Atomic transaction: write <code>Bibfiles/{citekey}.bib</code> and a <code>PaperNotes/{citekey}.md</code> skeleton; move the PDF to <code>PDFs/{citekey}.pdf</code>; update <code>index.json</code>; regenerate <code>library.bib</code>.</li>
-        <li>Roll back partial writes on any failure.</li>
-      </ol>
-
-      <div class="docs-note">
-        <p>
-          The skeleton note inherits <code>abstract</code> from CrossRef
-          when present, or falls back to PDF-page-0 text. The Librarian
-          audits this abstract field on every new filing — see
-          <code>agent/CLAUDE.local.md</code> § <em>When a PDF arrives</em>
-          for the full procedure.
-        </p>
-      </div>
-
-      <!-- ============================================================== -->
-      <h2 id="embed"><span class="h2-num">06</span>Embedding server</h2>
-
-      <p>
-        A small HTTP server (<code>scripts/embed_server.py</code>) runs on
-        the host at <code>127.0.0.1:5817</code> and stores embeddings in
-        <code>embeddings.db</code>. It is multi-model: the registry lives in
-        <code>scripts/embed_models.json</code>, each model is lazy-loaded on
-        first request, and a per-model idle TTL unloads cold models while
-        keeping hot ones warm. The whole process exits after 30&nbsp;min of
-        full idle and is respawned by launchd on the next request.
-      </p>
-
-      <h3>Endpoints</h3>
-      <ul>
-        <li><code>GET /health</code> — returns <code>{ok, default, registered, loaded, uptime_sec, idle_sec}</code>.</li>
-        <li><code>POST /embed</code> — body <code>{texts: [str], prompt: "document"|"query", model?: str}</code>; returns <code>{vectors, model}</code>.</li>
-        <li><code>POST /shutdown</code> — graceful exit.</li>
-      </ul>
-
-      <h3>Storage</h3>
-      <p>The schema in <code>embeddings.db</code> (sqlite-vec) is:</p>
-      <ul>
-        <li><code>papers (citekey, model, content_hash, embedded_at)</code> — primary key <code>(citekey, model)</code>.</li>
-        <li><code>vec_papers__&lt;safe_model_id&gt; (citekey TEXT PRIMARY KEY, embedding FLOAT[dim])</code> — one virtual table per registered model.</li>
-      </ul>
-      <p>
-        The corpus content embedded per paper is
-        <code>Title: {title}\n\nAbstract: {abstract}\n\nWhy: {why}\n\nNotes: {cleaned_notes}</code>.
-        <code>embed_corpus.py</code> re-embeds incrementally when the
-        content hash changes.
-      </p>
-
-      <!-- ============================================================== -->
-      <h2 id="architecture"><span class="h2-num">07</span>Viewer architecture</h2>
-
-      <p>
-        The Viewer is a Tauri desktop app — a Rust backend handling all
-        filesystem I/O, with a Svelte frontend in the WebView. The
-        frontend never touches files directly; it calls typed Rust
-        wrappers over Tauri's IPC.
-      </p>
-
-      <h3>Frontend</h3>
-      <p>
-        Svelte 5 with runes (<code>$state</code>, <code>$derived</code>,
-        <code>$effect</code>), Vite, TypeScript. No external state library;
-        per-feature stores in <code>.svelte.ts</code> modules.
-      </p>
-
-      <h3>Backend</h3>
-      <p>
-        Tauri 2 + Rust. All vault reads and writes live behind Rust
-        commands; atomic-write helpers are in <code>src-tauri/src/atomic.rs</code>.
-        Settings (the active vault path) are persisted to
-        <code>~/Library/Application Support/literature-vault/settings.json</code>
-        via <code>src-tauri/src/settings.rs</code>.
-      </p>
-
-      <h3>PDF</h3>
-      <p>
-        <code>@embedpdf/*</code> with the PDFium engine for rendering, plus
-        a custom Svelte overlay for highlights. Annotations are persisted
-        as EmbedPDF <code>AnnotationTransferItem[]</code> JSON sidecars at
-        <code>Annotations/{citekey}.json</code>, filtered against a
-        baseline snapshot so PDFs that arrive with embedded annotations
-        don't pollute the sidecar.
-      </p>
-
-      <h3>Editor</h3>
-      <p>
-        CodeMirror 6 (Markdown mode, line wrapping, history). Notes are
-        byte-preserving — only the YAML block and body bytes change on
-        save.
-      </p>
-
     </main>
+
   </div>
 
-  <footer class="docs-foot">
-    <span>Literature Vault — Documentation</span>
-    <nav>
-      <a href="./index.html">Home</a>
-      <a href="https://github.com/henriasv/literature-vault-system">Source</a>
-      <a href="https://github.com/henriasv/literature-vault-system/issues">Issues</a>
-      <a href="https://github.com/henriasv/literature-vault-system/blob/main/docs/DESIGN.md">DESIGN.md</a>
-    </nav>
+  <footer class="docs-footer">
+    <div class="footer-inner">
+      <span class="caps">Literature Vault · No. 001</span>
+      <nav aria-label="Footer">
+        <a href="./index.html">Home</a>
+        <a href="https://github.com/henriasv/literature-vault-system">Source</a>
+        <a href="https://github.com/henriasv/literature-vault-system/issues">Issues</a>
+      </nav>
+    </div>
   </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var DOCS_BASE = '../docs/';
+    var GITHUB_DOCS_BASE = 'https://github.com/henriasv/literature-vault-system/blob/main/docs/';
+    var INDEX_ROUTE = '';
+    var INDEX_FILE  = 'README.md';
+    var SPECIAL = {
+      'known-limitations': 'KNOWN_LIMITATIONS.md'
+    };
+
+    var content    = document.getElementById('docs-content');
+    var editLink   = document.getElementById('docs-edit-link');
+    var navLinks   = document.querySelectorAll('.docs-nav a[data-route]');
+
+    marked.use({ gfm: true, breaks: false });
+
+    function routeFromHash() {
+      var raw = location.hash.replace(/^#\/?/, '');
+      return raw || INDEX_ROUTE;
+    }
+
+    function pathFromRoute(route) {
+      if (route === INDEX_ROUTE) return INDEX_FILE;
+      if (SPECIAL[route]) return SPECIAL[route];
+      return route + '.md';
+    }
+
+    function githubUrlFromRoute(route) {
+      if (route === INDEX_ROUTE) return GITHUB_DOCS_BASE + 'README.md';
+      if (SPECIAL[route])        return GITHUB_DOCS_BASE + SPECIAL[route];
+      return GITHUB_DOCS_BASE + route + '.md';
+    }
+
+    // Resolve a relative .md link found in a doc, relative to the route's directory.
+    function rewriteLink(href, currentRoute) {
+      if (!href) return href;
+      if (/^[a-z]+:/i.test(href)) return href;          // http(s):, mailto:, etc.
+      if (href.charAt(0) === '#') return href;          // intra-page anchor
+
+      // Build base from current route's directory.
+      var baseDir = '';
+      if (currentRoute.indexOf('/') !== -1) {
+        baseDir = currentRoute.substring(0, currentRoute.lastIndexOf('/') + 1);
+      }
+
+      var base = new URL('http://x/' + baseDir);
+      var target;
+      try { target = new URL(href, base); } catch (e) { return href; }
+
+      var pathname = target.pathname.replace(/^\//, '');
+      var anchor   = target.hash || '';
+
+      // .md anywhere under the docs tree → hash route
+      if (/\.md$/i.test(pathname)) {
+        var slug = pathname.replace(/\.md$/i, '');
+        if (slug === 'README')             slug = '';
+        if (slug === 'KNOWN_LIMITATIONS')  slug = 'known-limitations';
+        return '#' + slug + anchor;
+      }
+
+      // Folder links (e.g. how-to/) — there is no per-section index doc, so
+      // route to the global index where the sidebar carries the section nav.
+      if (pathname.slice(-1) === '/' || pathname === '') {
+        return '#' + anchor;
+      }
+
+      // Anything else, leave as-is (asset, external markdown elsewhere)
+      return href;
+    }
+
+    function highlight(route) {
+      navLinks.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('data-route') === route);
+      });
+    }
+
+    function setTitle(route) {
+      var h1 = content.querySelector('h1');
+      var leaf = (route || 'documentation').split('/').pop().replace(/-/g, ' ');
+      var crumb = h1 ? h1.textContent : leaf;
+      document.title = crumb + ' — Literature Vault docs';
+    }
+
+    function inferEditUrl(route) {
+      editLink.href = githubUrlFromRoute(route);
+    }
+
+    function renderError(route, err) {
+      var path = pathFromRoute(route);
+      content.innerHTML =
+        '<h1>Not found</h1>' +
+        '<p>Could not load <code>' + DOCS_BASE + path + '</code>.</p>' +
+        (err ? '<pre>' + String(err) + '</pre>' : '') +
+        '<p>You can read this page directly on <a href="' + githubUrlFromRoute(route) + '">GitHub</a>.</p>';
+    }
+
+    async function load(route) {
+      content.innerHTML = '<p class="docs-loading">Loading…</p>';
+      var path = pathFromRoute(route);
+      var url  = DOCS_BASE + path;
+
+      try {
+        var res = await fetch(url, { cache: 'no-cache' });
+        if (!res.ok) { renderError(route, 'HTTP ' + res.status); return; }
+        var md = await res.text();
+
+        var html = marked.parse(md);
+
+        // Post-process: rewrite internal .md links to hash routes.
+        var sandbox = document.createElement('div');
+        sandbox.innerHTML = html;
+        sandbox.querySelectorAll('a[href]').forEach(function (a) {
+          var href = a.getAttribute('href');
+          var next = rewriteLink(href, route);
+          if (next !== href) a.setAttribute('href', next);
+        });
+
+        content.innerHTML = sandbox.innerHTML;
+        setTitle(route);
+        inferEditUrl(route);
+        highlight(route);
+        // Scroll: jump to anchor if hash includes one, otherwise top.
+        var anchor = location.hash.indexOf('#', 1);
+        if (anchor !== -1) {
+          var id = location.hash.substring(anchor + 1);
+          var target = document.getElementById(id);
+          if (target) { target.scrollIntoView({ behavior: 'instant', block: 'start' }); return; }
+        }
+        document.querySelector('.docs-main').scrollTo(0, 0);
+        window.scrollTo(0, 0);
+      } catch (err) {
+        renderError(route, err && err.message);
+      }
+    }
+
+    function go() { load(routeFromHash()); }
+    window.addEventListener('hashchange', go);
+    go();
+  })();
+  </script>
 
 </body>
 </html>

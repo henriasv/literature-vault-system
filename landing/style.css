@@ -1915,3 +1915,162 @@ footer {
   .topnav a:not(.ghost) { display: none; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
+
+/* =======================================================================
+   Rehaul additions — honest strip, required/optional install groups,
+   diagram badges, docs CTA quad, reduced-motion overrides, and the slim
+   docs.html redirect page.
+   ======================================================================= */
+
+/* -------- honest framing strip -------- */
+.band.honest {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-top: 1px solid var(--rule, #d8cdb6);
+  border-bottom: 1px solid var(--rule, #d8cdb6);
+  background: var(--panel-soft, #f3ecdc);
+}
+.honest-strip {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem 2rem;
+  font-family: var(--serif, "Source Serif 4", serif);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--ink, #1a1612);
+}
+.honest-strip > li { margin: 0; }
+.honest-strip .caps {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--accent, #7a3a14);
+  margin-bottom: 0.2rem;
+}
+
+/* -------- diagram req / opt badges -------- */
+.sys-tag-req,
+.sys-tag-opt {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 1px 6px;
+  font-family: var(--mono, "JetBrains Mono", monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  border-radius: 2px;
+  vertical-align: 0.06em;
+  text-transform: uppercase;
+}
+.sys-tag-req {
+  background: var(--ink, #1a1612);
+  color: var(--panel, #fcfaf5);
+}
+.sys-tag-opt {
+  background: transparent;
+  color: var(--ink, #1a1612);
+  border: 1px dashed currentColor;
+  opacity: 0.7;
+}
+
+/* -------- install: required / optional groupings -------- */
+.install-flow-eyebrow {
+  display: block;
+  margin: 2rem 0 0.5rem;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--accent, #7a3a14);
+}
+.install-flow-eyebrow--opt { color: var(--ink-soft, #5c4a35); }
+.install-flow--opt { opacity: 0.95; }
+.install-flow--opt li::marker { color: var(--ink-soft, #5c4a35); }
+.install-foot {
+  margin-top: 2rem;
+  text-align: right;
+}
+
+/* -------- docs CTA quad (also reused on docs.html) -------- */
+.docs-cta-quad {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+.docs-cta-quad > li { margin: 0; }
+.docs-cta-quad a {
+  display: block;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--rule, #d8cdb6);
+  border-radius: 4px;
+  background: var(--panel, #fcfaf5);
+  text-decoration: none;
+  color: var(--ink, #1a1612);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.docs-cta-quad a:hover {
+  border-color: var(--accent, #7a3a14);
+  background: var(--panel-soft, #f3ecdc);
+}
+.docs-cta-quad .caps {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--accent, #7a3a14);
+  margin-bottom: 0.4rem;
+}
+.docs-cta-blurb {
+  display: block;
+  font-family: var(--serif, "Source Serif 4", serif);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+/* -------- docs.html redirect page -------- */
+.docs-redirect {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+.docs-redirect-band h1 {
+  font-family: var(--serif, "Source Serif 4", serif);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  margin: 0.5rem 0 1rem;
+}
+.docs-redirect-prose {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  margin: 0 0 1.5rem;
+}
+.docs-redirect-quad { margin-top: 0; }
+.docs-redirect-fineprint {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft, #5c4a35);
+}
+
+/* -------- reduced-motion: stop infinite animations -------- */
+@media (prefers-reduced-motion: reduce) {
+  .phone-slide,
+  .phone-caption-text,
+  .dot::before,
+  .typewriter,
+  .typewriter::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .phoneshell .phone-slide.active,
+  .phoneshell .phone-caption-text.active { opacity: 1; }
+}
+
+/* -------- responsive: honest strip + docs quad -------- */
+@media (max-width: 900px) {
+  .honest-strip { grid-template-columns: repeat(2, 1fr); }
+  .docs-cta-quad { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .honest-strip { grid-template-columns: 1fr; gap: 1rem; }
+}
