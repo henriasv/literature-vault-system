@@ -141,7 +141,8 @@
     return roots;
   });
 
-  let expanded = $state<Set<string>>(new Set());
+  let expanded = $state<Set<string>>(organizeState.expanded);
+  $effect(() => { organizeState.expanded = expanded; });
   function toggleExpand(slug: string) {
     const next = new Set(expanded);
     if (next.has(slug)) next.delete(slug);
@@ -304,8 +305,10 @@
   /* ----- papers table source --------------------------------------------- */
 
   type SortKey = "title" | "author" | "journal" | "year" | "added";
-  let sortBy = $state<SortKey>("author");
-  let sortDir = $state<"asc" | "desc">("asc");
+  let sortBy = $state<SortKey>(organizeState.sortBy);
+  let sortDir = $state<"asc" | "desc">(organizeState.sortDir);
+  $effect(() => { organizeState.sortBy = sortBy; });
+  $effect(() => { organizeState.sortDir = sortDir; });
 
   function toggleSort(k: SortKey) {
     if (sortBy === k) {
@@ -424,7 +427,8 @@
    * hard filters (rows not in the source collection / not tagged are
    * dropped completely). */
 
-  let showAllHidden = $state(false);
+  let showAllHidden = $state(organizeState.showAllHidden);
+  $effect(() => { organizeState.showAllHidden = showAllHidden; });
 
   function matchesQuery(p: PaperMeta, q: string): boolean {
     if (!q) return true;
@@ -851,7 +855,8 @@
    * (horizontal scroll by default, multi-row when expanded). The active
    * set is shared with `libraryState.selectedTags` so chip-clicks are
    * consistent across views. */
-  let tagsExpanded = $state(false);
+  let tagsExpanded = $state(organizeState.tagsExpanded);
+  $effect(() => { organizeState.tagsExpanded = tagsExpanded; });
   const visibleTags = $derived(allTags());
 </script>
 

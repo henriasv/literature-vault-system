@@ -14,6 +14,8 @@
  * component — re-opening Organizing should give a clean menu state.
  */
 
+export type SortKey = "title" | "author" | "journal" | "year" | "added";
+
 interface OrganizeState {
   /** Which subview the right pane renders: the paper table or the
    *  unfiled-PDFs Inbox panel. */
@@ -31,6 +33,21 @@ interface OrganizeState {
   /** Open preview overlay (inbox row). Mutually exclusive with
    *  previewCitekey. */
   previewInboxPath: string | null;
+
+  /** Paper table sort column. */
+  sortBy: SortKey;
+
+  /** Paper table sort direction. */
+  sortDir: "asc" | "desc";
+
+  /** Slugs of collection-tree folders the user has expanded. */
+  expanded: Set<string>;
+
+  /** Show papers marked hidden in the paper table. */
+  showAllHidden: boolean;
+
+  /** Tag-chip rail expanded vs collapsed. */
+  tagsExpanded: boolean;
 }
 
 export const organizeState = $state<OrganizeState>({
@@ -38,4 +55,9 @@ export const organizeState = $state<OrganizeState>({
   selected: new Set<string>(),
   previewCitekey: null,
   previewInboxPath: null,
+  sortBy: "author",
+  sortDir: "asc",
+  expanded: new Set<string>(),
+  showAllHidden: false,
+  tagsExpanded: false,
 });
