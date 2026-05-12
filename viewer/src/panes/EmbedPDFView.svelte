@@ -47,6 +47,7 @@
   import { HistoryPluginPackage } from "@embedpdf/plugin-history/svelte";
 
   import EmbedPdfToolbar from "./EmbedPdfToolbar.svelte";
+  import EmbedWheelZoom from "./EmbedWheelZoom.svelte";
   import EmbedHighlightSelectionMenu from "./EmbedHighlightSelectionMenu.svelte";
   import EmbedPageAnnotations from "./EmbedPageAnnotations.svelte";
   import EmbedAnnotationKeybinds from "./EmbedAnnotationKeybinds.svelte";
@@ -214,6 +215,7 @@
                   <RendererRegistryProvider>
                     <EmbedAnnotationKeybinds />
                     <GlobalPointerProvider documentId={activeDocumentId}>
+                      <EmbedWheelZoom documentId={activeDocumentId}>
                       <Viewport class="ep-viewport" documentId={activeDocumentId}>
                         <Scroller documentId={activeDocumentId}>
                           {#snippet renderPage(page)}
@@ -269,6 +271,7 @@
                           {/snippet}
                         </Scroller>
                       </Viewport>
+                      </EmbedWheelZoom>
                     </GlobalPointerProvider>
                   </RendererRegistryProvider>
                 </div>
