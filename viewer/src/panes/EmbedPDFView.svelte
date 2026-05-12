@@ -214,8 +214,8 @@
                   <RendererRegistryProvider>
                     <EmbedAnnotationKeybinds />
                     <GlobalPointerProvider documentId={activeDocumentId}>
-                      <ZoomGestureWrapper class="zoom-gesture-fill" documentId={activeDocumentId}>
                       <Viewport class="ep-viewport" documentId={activeDocumentId}>
+                        <ZoomGestureWrapper class="zoom-gesture-fill" documentId={activeDocumentId}>
                         <Scroller documentId={activeDocumentId}>
                           {#snippet renderPage(page)}
                             <div class="page-bg" style:width="{page.width}px" style:height="{page.height}px">
@@ -269,8 +269,8 @@
                             </div>
                           {/snippet}
                         </Scroller>
+                        </ZoomGestureWrapper>
                       </Viewport>
-                      </ZoomGestureWrapper>
                     </GlobalPointerProvider>
                   </RendererRegistryProvider>
                 </div>
