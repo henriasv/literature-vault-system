@@ -330,7 +330,6 @@
                                   {#snippet selectionMenuSnippet(props)}
                                     <EmbedHighlightSelectionMenu
                                       documentId={activeDocumentId}
-                                      {citekey}
                                       {...props}
                                     />
                                   {/snippet}
