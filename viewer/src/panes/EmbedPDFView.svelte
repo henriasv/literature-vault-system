@@ -284,7 +284,7 @@
                     <EmbedAnnotationKeybinds />
                     <GlobalPointerProvider documentId={activeDocumentId}>
                       <Viewport class="ep-viewport" documentId={activeDocumentId}>
-                        <ZoomGestureWrapper class="zoom-gesture-fill" documentId={activeDocumentId}>
+                        <ZoomGestureWrapper documentId={activeDocumentId}>
                         <Scroller documentId={activeDocumentId}>
                           {#snippet renderPage(page)}
                             <div class="page-bg" style:width="{page.width}px" style:height="{page.height}px">
@@ -364,17 +364,6 @@
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
-  }
-  /* EmbedPDF's ZoomGestureWrapper sets an inline `display: inline-block`
-     on its own div, which collapses inside our flex column and leaves
-     the Viewport with no height. The wrapper's API omits `style` from
-     props but accepts `class`, so we override via !important. */
-  .ep-host :global(.zoom-gesture-fill) {
-    display: flex !important;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    min-width: 0;
   }
   .ep-host :global(.ep-viewport) {
     background: var(--recess, #e6dfc8);
