@@ -6,9 +6,13 @@
   This is the canonical EmbedPDF pattern (matches their
   `SelectionSelectionMenu` example): the SelectionLayer's
   `selectionMenuSnippet` slot mounts us with the selection's bounds +
-  page index, and we drive the annotation plugin programmatically. Our
-  toolbar's annotation bar still works as a "pre-select a color" flow
-  for keyboard-first usage; this menu is the click-driven path.
+  page index, and we drive the annotation plugin programmatically.
+
+  We capture the selected text into the annotation's `contents` field so
+  it round-trips through the JSON sidecar at `Annotations/<citekey>.json`
+  — the librarian agent + the export-PDF pipeline read excerpts from
+  there. The user's freeform comment on a highlight is a separate field
+  (`custom.comment`), edited via EmbedAnnotationSelectionMenu.
 -->
 <script lang="ts">
   import { useAnnotationCapability } from "@embedpdf/plugin-annotation/svelte";
@@ -17,18 +21,15 @@
   import type { MenuWrapperProps } from "@embedpdf/utils/svelte";
   import type { Rect } from "@embedpdf/models";
   import { HIGHLIGHT_COLORS, type HighlightColor } from "../lib/highlight-colors";
-  import { appendHighlight } from "../lib/vault";
-  import { toast } from "../state/toast.svelte";
 
   type Props = {
     documentId: string;
-    citekey: string;
     rect: Rect;
     menuWrapperProps: MenuWrapperProps;
     selected: boolean;
     context: { type: "selection"; pageIndex: number };
   };
-  let { documentId, citekey, rect, menuWrapperProps, selected, context }: Props = $props();
+  let { documentId, rect, menuWrapperProps, selected, context }: Props = $props();
 
   const annotation = useAnnotationCapability();
   const selection = useSelectionCapability();
@@ -43,12 +44,11 @@
     const bounding = selProv.getBoundingRectForPage(pageIndex);
     if (segmentRects.length === 0 || !bounding) return;
 
-    // Capture the selected text BEFORE creating the annotation —
-    // getSelectedText is a Task<string[]>, one string per page the
-    // selection spans. We then stash it as the annotation's `contents`
-    // (round-trips into the sidecar + an eventual XFDF export) and
-    // append it to the note's `## Highlights` section as a record the
-    // user can search / cite from.
+    // Capture the selected text and stash it as the annotation's
+    // `contents`. Round-trips through `Annotations/{citekey}.json` for
+    // the librarian agent + the eventual PDF export. The user's
+    // freeform comment is a separate field on the annotation
+    // (`custom.comment`), edited from the click-on-highlight menu.
     let excerpt = "";
     try {
       const parts = await selProv.getSelectedText().toPromise();
@@ -73,19 +73,6 @@
     });
 
     selProv.clear();
-
-    if (excerpt) {
-      // Fire-and-forget: don't block the UI on the note write. Append
-      // is idempotent-ish (same excerpt twice will produce two lines —
-      // which is what the user would want for actual duplicates). On
-      // failure we surface a toast rather than swallow silently so the
-      // user knows the markdown didn't update; the in-PDF highlight
-      // still persists via the sidecar regardless.
-      void appendHighlight(citekey, pageIndex + 1, excerpt).catch((e) => {
-        console.warn("[HighlightMenu] appendHighlight failed", e);
-        toast(`Highlight saved, but failed to append to note: ${e}`, "error");
-      });
-    }
   }
 </script>
 
