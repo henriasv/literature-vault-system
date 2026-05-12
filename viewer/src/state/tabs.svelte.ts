@@ -10,12 +10,13 @@ interface TabsState {
   pdfFindFocusToken: number;
 }
 
-function freshTab(citekey: string): Tab {
+function freshTab(citekey: string, preview: boolean): Tab {
   return {
     citekey,
     pdfPage: 1,
     pdfZoom: "auto",
     scrollPos: { pdf: 0, note: 0 },
+    preview,
   };
 }
 
@@ -31,7 +32,25 @@ export function activeTab(): Tab | null {
   return tabsState.tabs[tabsState.activeIndex] ?? null;
 }
 
-/** Replace current tab (or open one if none). Focuses an existing tab if already open. */
+function findPreviewIdx(): number {
+  return tabsState.tabs.findIndex((t) => t.preview);
+}
+
+/**
+ * Single-click semantics — opens the paper in the ephemeral preview
+ * slot. Behaviour:
+ *
+ *   - Paper already open in some tab → just focus it (preview state
+ *     of that tab is left as-is).
+ *   - A preview tab already exists → replace its content with this
+ *     paper, keep it as the preview slot, focus it.
+ *   - No preview tab → append a new preview tab.
+ *
+ * The previous "always-replace-active-tab" semantics is gone: if the
+ * user is on a permanent tab and single-clicks something else, the
+ * permanent tab stays untouched and the new paper lands in the
+ * preview slot (creating one if needed).
+ */
 export function openInTab(citekey: string): void {
   pushRecent(citekey);
   const existing = tabsState.tabs.findIndex((t) => t.citekey === citekey);
@@ -39,26 +58,48 @@ export function openInTab(citekey: string): void {
     tabsState.activeIndex = existing;
     return;
   }
-  if (tabsState.tabs.length === 0 || tabsState.activeIndex < 0) {
-    tabsState.tabs = [...tabsState.tabs, freshTab(citekey)];
-    tabsState.activeIndex = tabsState.tabs.length - 1;
+  const previewIdx = findPreviewIdx();
+  if (previewIdx >= 0) {
+    const next = [...tabsState.tabs];
+    next[previewIdx] = freshTab(citekey, true);
+    tabsState.tabs = next;
+    tabsState.activeIndex = previewIdx;
     return;
   }
-  const next = [...tabsState.tabs];
-  next[tabsState.activeIndex] = freshTab(citekey);
-  tabsState.tabs = next;
+  tabsState.tabs = [...tabsState.tabs, freshTab(citekey, true)];
+  tabsState.activeIndex = tabsState.tabs.length - 1;
 }
 
-/** Always open in a new tab (also focuses an existing tab if already open). */
+/**
+ * Cmd-click / middle-click / double-click semantics — opens the paper
+ * as a permanent tab. If the paper is already open in the preview
+ * slot, promote that tab to permanent (don't open a duplicate).
+ */
 export function openInNewTab(citekey: string): void {
   pushRecent(citekey);
   const existing = tabsState.tabs.findIndex((t) => t.citekey === citekey);
   if (existing >= 0) {
+    if (tabsState.tabs[existing].preview) {
+      const next = [...tabsState.tabs];
+      next[existing] = { ...next[existing], preview: false };
+      tabsState.tabs = next;
+    }
     tabsState.activeIndex = existing;
     return;
   }
-  tabsState.tabs = [...tabsState.tabs, freshTab(citekey)];
+  tabsState.tabs = [...tabsState.tabs, freshTab(citekey, false)];
   tabsState.activeIndex = tabsState.tabs.length - 1;
+}
+
+/** Promote a tab from preview to permanent. No-op if already permanent
+ *  or index out of range. */
+export function promoteToPermanent(idx: number): void {
+  if (idx < 0 || idx >= tabsState.tabs.length) return;
+  const t = tabsState.tabs[idx];
+  if (!t.preview) return;
+  const next = [...tabsState.tabs];
+  next[idx] = { ...t, preview: false };
+  tabsState.tabs = next;
 }
 
 export function closeTab(idx: number): void {

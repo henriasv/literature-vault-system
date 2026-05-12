@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tabsState, closeTab } from "../state/tabs.svelte";
+  import { tabsState, closeTab, promoteToPermanent } from "../state/tabs.svelte";
   import { libraryState } from "../state/library.svelte";
   import { paperLabel } from "../lib/vault";
   import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -40,6 +40,8 @@
       aria-selected={i === tabsState.activeIndex}
       class="tab"
       class:active={i === tabsState.activeIndex}
+      class:preview={tab.preview}
+      title={tab.preview ? "Preview tab — double-click to keep" : tabLabel(tab.citekey)}
       onmousedown={(e) => {
         if (e.button === 1) {
           e.preventDefault();
@@ -47,6 +49,13 @@
         } else if (e.button === 0) {
           tabsState.activeIndex = i;
         }
+      }}
+      ondblclick={(e) => {
+        /* Double-click the tab itself promotes it from preview to
+         * permanent (matches VS Code). Close button has its own
+         * handler so it doesn't get caught here. */
+        if ((e.target as HTMLElement).closest(".close")) return;
+        promoteToPermanent(i);
       }}
     >
       <span class="label">{tabLabel(tab.citekey)}</span>
@@ -108,6 +117,15 @@
     border-top-color: var(--accent);
     border-left-color: var(--ink-12);
     border-right-color: var(--ink-12);
+  }
+  /* Preview tabs — italic label, slightly lighter weight even when
+     active, so the user can tell at a glance which tab is the
+     ephemeral one. Matches the VS Code preview convention. */
+  .tab.preview .label {
+    font-style: italic;
+  }
+  .tab.preview.active {
+    font-weight: 500;
   }
   .label {
     max-width: 220px;

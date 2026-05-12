@@ -628,6 +628,7 @@
             }}
             ondragend={(e) => void finishInternalDrag(e)}
             onclick={(e) => rowClick(e, p.citekey)}
+            ondblclick={() => openInNewTab(p.citekey)}
             onmousedown={(e) => {
               if (e.button === 1) {
                 e.preventDefault();

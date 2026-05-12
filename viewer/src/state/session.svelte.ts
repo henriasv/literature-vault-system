@@ -10,7 +10,10 @@ import { tabsState } from "./tabs.svelte";
 import { prefsState, pushRecent, normalizeRecents, type RecentEntry } from "./prefs.svelte";
 
 interface PersistedSession {
-  tabs: Array<{ citekey: string }>;
+  /** `preview` is optional: sessions written before the preview-tab
+   *  feature shipped don't carry it, and on restore those tabs default
+   *  to permanent (preview = false). */
+  tabs: Array<{ citekey: string; preview?: boolean }>;
   activeIndex: number;
   splitRatio: number;
   libraryCollapsed: boolean;
@@ -104,7 +107,7 @@ export function scheduleSessionSave(): void {
   sessionTimer = window.setTimeout(async () => {
     sessionTimer = null;
     const payload: PersistedSession = {
-      tabs: tabsState.tabs.map((t) => ({ citekey: t.citekey })),
+      tabs: tabsState.tabs.map((t) => ({ citekey: t.citekey, preview: t.preview === true })),
       activeIndex: tabsState.activeIndex,
       splitRatio: prefsState.splitRatio,
       libraryCollapsed: prefsState.libraryCollapsed,
@@ -138,14 +141,21 @@ export async function bootstrapSession(): Promise<void> {
       if (Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
         // For each persisted tab, hydrate per-paper PDF state from disk.
         const hydrated: Tab[] = [];
+        /* At most one preview tab can be restored; if multiple are
+         * persisted (shouldn't happen but be defensive), only the first
+         * keeps its preview flag, the rest are promoted to permanent. */
+        let previewSeen = false;
         for (const t of parsed.tabs) {
           if (!t || typeof t.citekey !== "string") continue;
           const ts = await loadTabState(t.citekey);
+          const isPreview = t.preview === true && !previewSeen;
+          if (isPreview) previewSeen = true;
           hydrated.push({
             citekey: t.citekey,
             pdfPage: ts.pdfPage,
             pdfZoom: ts.pdfZoom,
             scrollPos: ts.scrollPos,
+            preview: isPreview,
           });
         }
         tabsState.tabs = hydrated;
@@ -184,9 +194,11 @@ export function setupAutoSave(): () => void {
       void prefsState.collectionsPanelOpen;
       void prefsState.collectionsPanelWidth;
       void prefsState.recents.length;
-      // Track tabs structurally: count + each citekey.
-      const citekeys = tabsState.tabs.map((t) => t.citekey).join("\n");
-      void citekeys;
+      // Track tabs structurally: count + each citekey + each preview
+      // flag (so promoting a tab from preview to permanent triggers a
+      // session re-save).
+      const signature = tabsState.tabs.map((t) => `${t.citekey}|${t.preview ? "p" : "P"}`).join("\n");
+      void signature;
       scheduleSessionSave();
     });
 

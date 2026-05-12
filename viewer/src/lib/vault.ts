@@ -22,6 +22,12 @@ export interface Tab {
   pdfPage: number;
   pdfZoom: number | "auto";
   scrollPos: { pdf: number; note: number };
+  /** When true, this tab occupies the single ephemeral "preview" slot
+   *  — single-clicking another paper replaces its content rather than
+   *  appending a new tab. At most one preview tab exists at any time;
+   *  cmd/middle-click and double-click open permanent tabs (preview =
+   *  false) and never touch the preview slot. */
+  preview?: boolean;
 }
 
 export interface Session {
