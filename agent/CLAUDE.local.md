@@ -107,7 +107,7 @@ Before starting any operation where you can see the work is large or will be slo
 
 ## Pre-digital papers (no CrossRef DOI)
 
-If a paper is truly absent from CrossRef AND DataCite (no DOI exists), use the manual filing path: the user types a BibTeX entry into the viewer's manual-entry form, which invokes `manual_file.py`. The citekey gets minted from `{author}{year}-{short-title-slug}` per `docs/CITATION_KEYS.md`. Mark `doi: null` in the note frontmatter.
+If a paper is truly absent from CrossRef AND DataCite (no DOI exists), use the manual filing path: the user types a BibTeX entry into the viewer's manual-entry form, which invokes `manual_file.py`. The citekey gets minted from `{author}{year}-{short-title-slug}` per `docs/reference/citation-keys.md`. Mark `doi: null` in the note frontmatter.
 
 In practice, always try CrossRef title search first — many old papers (back to ~1900) are indexed.
 

@@ -1,7 +1,17 @@
-# Tauri + SvelteKit + TypeScript
+# Viewer
 
-This template should help get you started developing with Tauri, SvelteKit and TypeScript in Vite.
+The macOS desktop app. Tauri 2 + Svelte 5 + EmbedPDF + CodeMirror 6.
 
-## Recommended IDE Setup
+- **Building / installing:** see [tutorial: getting started](../docs/tutorial/getting-started.md) step 2.
+- **Architecture & internals:** [reference: viewer architecture](../docs/reference/viewer-architecture.md).
+- **Updating after a `git pull`:** [how-to: update the Viewer](../docs/how-to/update-the-viewer.md).
+- **Things that don't work yet:** [Known limitations](../docs/KNOWN_LIMITATIONS.md).
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer).
+## Dev quickstart
+
+```bash
+npm install
+npm run tauri dev
+```
+
+Set `localStorage.setItem('vault.embedPdf', '1')` in the dev console to toggle the EmbedPDF-based reader (currently the default in the built app).

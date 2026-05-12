@@ -3,8 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Literature Vault — a reference manager system for the BibTeX + Markdown workflow</title>
-  <meta name="description" content="Literature Vault is a small, opinionated reference manager system. Two surfaces share one folder on disk: the Viewer (macOS) for deep reading and note-writing, and the Librarian (Telegram bot, via nanoclaw) for phone-based intake and chat follow-up. BibTeX out, plain .md notes." />
+  <title>Literature Vault — a personal reference-manager system on macOS</title>
+  <meta name="description" content="A personal, pre-1.0 reference-manager system for researchers who write in LaTeX, Typst, or Pandoc. Two surfaces share one folder on disk: a macOS Viewer for deep reading and note-writing, and an optional Telegram bot for phone-based intake. PDFs on disk, Markdown notes, BibTeX out." />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Literature Vault — a personal reference-manager system on macOS" />
+  <meta property="og:description" content="A pre-1.0 reference manager for the BibTeX + Markdown workflow. macOS Viewer + optional Telegram bot, sharing one folder on disk." />
+  <meta property="og:url" content="https://github.com/henriasv/literature-vault-system" />
+  <meta name="twitter:card" content="summary_large_image" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,7 +26,7 @@
         <span class="caps">No. 001 ·</span>
         <span class="masthead-title">Literature Vault</span>
       </span>
-      <nav class="topnav">
+      <nav class="topnav" aria-label="Site">
         <a href="#features">Features</a>
         <a href="#agent">Librarian agent</a>
         <a href="#install">Install</a>
@@ -35,7 +41,7 @@
     <!-- HERO — two surfaces, side by side -->
     <section class="hero hero-app" aria-label="Literature Vault — Viewer and Librarian, side by side">
       <div class="hero-twin">
-      <div class="appshell" role="img" aria-label="A stylized rendering of the Literature Vault Viewer: three panes (library, PDF, notes) with traffic-light window controls and a paper tab. The marketing copy is set inside the panes.">
+      <div class="appshell" role="img" aria-label="A stylized rendering of the Literature Vault Viewer: three panes (library, PDF, notes) with traffic-light window controls and a paper tab.">
 
         <!-- top chrome -->
         <div class="ash-topbar">
@@ -80,16 +86,18 @@
             </h1>
 
             <p class="ash-lede">
-              A small, opinionated reference manager system for researchers in LaTeX,
-              Typst, or Pandoc. Two surfaces share one folder: the <strong>Viewer</strong>
-              on macOS, and the <strong>Librarian</strong> on Telegram (a
-              <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a> bot).
-              PDFs on disk, Markdown notes, BibTeX out.
+              A personal reference-manager system for researchers writing in
+              LaTeX, Typst, or Pandoc. A macOS <strong>Viewer</strong> for deep
+              reading and note-writing, and an optional Telegram
+              <strong>Librarian</strong> (a
+              <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a> bot)
+              for phone-based intake. Both share one folder on disk —
+              PDFs, Markdown notes, BibTeX. Pre-1.0 and macOS-only.
             </p>
 
             <div class="ash-cta-row">
-              <a class="cta primary" href="https://github.com/henriasv/literature-vault-system">Get it on GitHub</a>
-              <a class="cta ghost" href="#features">See the features</a>
+              <a class="cta primary" href="./docs.html">Read the docs</a>
+              <a class="cta ghost" href="https://github.com/henriasv/literature-vault-system">GitHub →</a>
             </div>
 
             <div class="ash-searchbar">
@@ -122,7 +130,7 @@
                   <span class="ll-year">2026</span>
                   <span class="ll-age">just now</span>
                 </div>
-                <p class="ll-title">Literature Vault: a reference manager system for the BibTeX + Markdown workflow</p>
+                <p class="ll-title">Literature Vault: a personal reference-manager system on macOS</p>
                 <p class="ll-journal">Editorial Library</p>
               </li>
               <li>
@@ -178,7 +186,7 @@
               <p class="caps ash-paper-area">Software · Workflow</p>
 
               <h2 class="ash-paper-title">
-                Literature Vault: a reference manager system for the BibTeX + Markdown workflow
+                Literature Vault: a personal reference-manager system on macOS
               </h2>
 
               <p class="ash-paper-authors">
@@ -186,14 +194,15 @@
               </p>
 
               <p class="ash-paper-abstract">
-                <span class="ash-dropcap">L</span>iterature Vault is a small, opinionated
-                reference manager system for researchers who write in LaTeX, Typst, or
-                Pandoc. Two surfaces share one folder on disk: the <em>Viewer</em> on
-                macOS for deep reading and note-writing, and the <em>Librarian</em> — a
-                Telegram bot running on nanoclaw — for phone-based intake and
-                conversational library follow-up. PDFs on disk, one Markdown note per
-                paper, BibTeX out; the contract between surfaces is the filesystem, and
-                nothing else. The vault is independent of either tool.
+                <span class="ash-dropcap">L</span>iterature Vault is a personal,
+                pre-1.0 reference-manager system for researchers who write in
+                LaTeX, Typst, or Pandoc. Two surfaces share one folder on disk:
+                the <em>Viewer</em> on macOS for deep reading and note-writing,
+                and an optional <em>Librarian</em> — a Telegram bot running on
+                nanoclaw — for phone-based intake and conversational follow-up.
+                PDFs on disk, one Markdown note per paper, BibTeX out. The
+                contract between surfaces is the filesystem; the vault is
+                independent of either tool.
               </p>
 
               <p class="caps ash-col-hdr ash-section-tease">Introduction</p>
@@ -212,7 +221,7 @@
               </p>
 
               <h3 class="ash-note-title ash-note-title--small">
-                Literature Vault: a reference manager system…
+                Literature Vault: a personal reference-manager system…
               </h3>
 
               <p class="ash-note-meta ash-note-meta--small">
@@ -300,7 +309,7 @@
 
                     <div class="tg-bubble in tg-long">
                       Filed as <span class="mono">livne2008-prl-physrevlett-101-264301</span> — Livne, Bouchbinder &amp; Fineberg, <strong>Breakdown of linear elastic fracture mechanics at the tip of a rapid crack</strong>, PRL 2008.<br /><br />
-                      Added to <span class="mono">Collections/fracture-instabilities</span>.
+                      Suggested tags from your library: <span class="mono">fracture</span>, <span class="mono">cite:chemfrac</span>. Want me to add them?
                       <span class="tg-time">10:54</span>
                     </div>
 
@@ -323,7 +332,7 @@
                   <div class="tg-chat">
 
                     <div class="tg-bubble out">
-                      Send me my papers on detachment fronts.
+                      What do I have on detachment fronts?
                       <span class="tg-time">14:02 <span class="tg-check">✓✓</span></span>
                     </div>
 
@@ -419,6 +428,16 @@
       <p class="appshell-cap">The Viewer · macOS, Tauri 2 + Svelte 5   ·   The Librarian · Telegram, via nanoclaw</p>
     </section>
 
+    <!-- HONEST FRAMING — quick context strip -->
+    <section class="band honest" aria-label="What this is and isn't">
+      <ul class="honest-strip">
+        <li><span class="caps">Status</span> Pre-1.0, sharing-friendly but not a polished product.</li>
+        <li><span class="caps">Platform</span> Apple Silicon Mac only. No signed <span class="mono">.dmg</span> — you build from source.</li>
+        <li><span class="caps">Pieces</span> The vault (just a folder on disk) plus at least one surface. The Viewer is the obvious pick; the Librarian on its own also works. Embedding server is a sidecar — install only if you want semantic search.</li>
+        <li><span class="caps">You bring</span> A Telegram bot token (only if you want the Librarian); a <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a> install on top of Docker.</li>
+      </ul>
+    </section>
+
     <!-- POSITIONING -->
     <section class="band positioning">
       <div class="cols">
@@ -426,10 +445,10 @@
           <p class="caps">Who it's for</p>
           <p class="body">
             Researchers who write in LaTeX, Typst, or Pandoc and want their reading
-            material as plain files on disk. If your paper-writing flow already starts
-            with <span class="mono">\cite&#123;…&#125;</span>, the system is aimed at
-            this workflow — opinionated about format, deliberately small in scope, and
-            structured so the files are independent of either tool.
+            material as plain files on disk. If your paper-writing flow already
+            starts with <span class="mono">\cite&#123;…&#125;</span>, this is the
+            workflow it targets — opinionated about format, deliberately narrow in
+            scope, structured so the files outlive either tool.
           </p>
         </div>
         <div class="col">
@@ -438,11 +457,11 @@
             <strong>The Viewer</strong> (macOS app) is for deep reading and
             note-writing — library list, PDF, Markdown notes side-by-side, semantic
             search.<br />
-            <strong>The Librarian</strong> (Telegram bot, via
+            <strong>The Librarian</strong> (optional Telegram bot, via
             <span class="mono">nanoclaw</span>) is for phone-based intake and
-            chat-based library follow-up.<br />
-            They share one folder on disk and nothing else. Swap either piece without
-            breaking the other.
+            chat-based follow-up.<br />
+            They share one folder on disk and nothing else. Swap either piece
+            without breaking the other.
           </p>
         </div>
       </div>
@@ -456,7 +475,7 @@
       <div class="sys-diagram">
 
         <figure class="sys-node">
-          <p class="caps">Viewer</p>
+          <p class="caps">Viewer <span class="sys-tag-req">required</span></p>
           <div class="sys-mini viewer-mini" aria-hidden="true">
             <span class="vm-pane vm-lib"></span>
             <span class="vm-pane vm-pdf"><span class="vm-pdf-label">PDF</span></span>
@@ -477,7 +496,7 @@
         </div>
 
         <figure class="sys-node sys-vault-node">
-          <p class="caps">Vault</p>
+          <p class="caps">Vault <span class="sys-tag-req">required</span></p>
           <pre class="sys-tree"><code>PDFs/
 PaperNotes/
 Bibfiles/
@@ -502,7 +521,7 @@ embeddings.db</code></pre>
         </div>
 
         <figure class="sys-node">
-          <p class="caps">Librarian</p>
+          <p class="caps">Librarian <span class="sys-tag-opt">optional</span></p>
           <div class="sys-mini agent-mini" aria-hidden="true">
             <span class="am-row"><span class="am-dot">›</span> chat on Telegram</span>
             <span class="am-row"><span class="am-dot">›</span> phone intake</span>
@@ -515,22 +534,25 @@ embeddings.db</code></pre>
       </div>
 
       <p class="body sys-caption">
-        The contract between viewer and agent is the filesystem — nothing else.
-        Either piece can be swapped without breaking the other; the vault is
-        independent of either tool.
+        The contract between Viewer and Librarian is the filesystem — nothing
+        else. The embedding server is a sidecar HTTP service on
+        <span class="mono">localhost:5817</span>; install it if you want
+        semantic search, skip it otherwise. The vault is independent of all
+        three.
       </p>
     </section>
 
     <!-- INSTALL -->
     <section id="install" class="band install">
       <p class="caps section-eyebrow">No. 003 · Install</p>
-      <h2>Six commands, in order.</h2>
+      <h2>Three required steps, three optional.</h2>
       <p class="body install-intro">
-        Apple Silicon Mac. The first script that takes
-        <span class="mono">--vault</span> stores it in a gitignored
+        Apple Silicon Mac. The first script you run with
+        <span class="mono">--vault</span> stores the path in a gitignored
         <span class="mono">setup/.local.conf</span>; the rest default to it.
-        Steps 5 and 6 are optional.
       </p>
+
+      <p class="caps install-flow-eyebrow">Required</p>
 
       <ol class="install-flow">
 
@@ -543,8 +565,8 @@ rustup-init -y</code></pre>
 
         <li>
           <p class="install-flow-title">Clone the repo and build the Viewer.</p>
-<pre class="install-block"><code>git clone https://github.com/henriasv/literature-vault-system
-cd literature-vault-system
+<pre class="install-block"><code>git clone https://github.com/henriasv/literature-vault-system ~/repos/literature-vault-system
+cd ~/repos/literature-vault-system
 
 ./setup/install-viewer.sh</code></pre>
           <p class="fineprint">
@@ -555,102 +577,90 @@ cd literature-vault-system
         </li>
 
         <li>
-          <p class="install-flow-title">Scaffold a vault.</p>
+          <p class="install-flow-title">Scaffold a vault and point the Viewer at it.</p>
 <pre class="install-block"><code>./setup/init-vault.sh ~/literature-vault
-
-# already have papers + notes? add --adopt:
-./setup/init-vault.sh ~/existing-collection --adopt</code></pre>
+./setup/configure-viewer.sh</code></pre>
+          <p class="fineprint">
+            Already have a folder of papers + notes? Use
+            <span class="mono">--adopt</span> instead and follow the
+            <a href="./docs.html#how-to/adopt-existing-papers">adopt-existing-papers guide</a>.
+          </p>
         </li>
 
-        <li>
-          <p class="install-flow-title">Point the Viewer at it.</p>
-<pre class="install-block"><code>./setup/configure-viewer.sh</code></pre>
-        </li>
+      </ol>
+
+      <p class="caps install-flow-eyebrow install-flow-eyebrow--opt">Optional add-ons</p>
+
+      <ol class="install-flow install-flow--opt" start="4">
 
         <li>
           <p class="install-flow-title">
-            Embed server <span class="install-opt">— optional</span>
-            <br />Always-on semantic search via launchd.
+            Embedding server <span class="install-opt">— for semantic search</span>
           </p>
           <p class="body install-step-prose">
-            Default model is
-            <span class="mono">nvidia/llama-embed-nemotron-8b</span>
-            (4096-dim, ~14&nbsp;GB). Run from inside the vault so the path
-            resolves correctly.
+            Default model is <span class="mono">nvidia/llama-embed-nemotron-8b</span>
+            (4096-dim, ~14&nbsp;GB) — gated, so log in first. Lighter alternative
+            <span class="mono">google/embeddinggemma-300m</span> (768-dim, ~1.2&nbsp;GB)
+            is unmetered.
           </p>
 <pre class="install-block"><code>cd ~/literature-vault
-
-# Authenticate (the Nemotron repo is gated):
 uv run --with huggingface_hub huggingface-cli login
 
-# Download into .embedding_models/&lt;dir-name-in-embed_models.json&gt;/:
 uv run --with huggingface_hub python3 -c '
 from huggingface_hub import snapshot_download
 snapshot_download(
     repo_id="nvidia/llama-embed-nemotron-8b",
     local_dir=".embedding_models/llama-embed-nemotron-8b")'
 
-# Index the corpus + launch the server:
 uv run scripts/embed_corpus.py
 ./setup/install-embed-server.sh</code></pre>
           <p class="fineprint">
-            Lighter alternative: <span class="mono">google/embeddinggemma-300m</span>
-            (768-dim, ~1.2&nbsp;GB) — flip <span class="mono">default</span>
-            in <span class="mono">scripts/embed_models.json</span> if you
-            install it instead.
+            Full instructions:
+            <a href="./docs.html#how-to/install-the-embedding-server">how-to: install the embedding server</a>.
           </p>
         </li>
 
         <li>
           <p class="install-flow-title">
-            Librarian agent <span class="install-opt">— optional</span>
-            <br />Telegram intake via
-            <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a>.
+            Librarian agent <span class="install-opt">— for Telegram intake</span>
           </p>
-
           <p class="body install-step-prose">
-            <strong>First, on the nanoclaw side:</strong>
+            First, install
+            <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a>
+            (Docker + an Anthropic API key) and pair a Telegram bot through its
+            onboarding. You'll need a bot token from
+            <a href="https://t.me/BotFather">@BotFather</a>.
           </p>
-          <ol class="install-substeps">
-            <li>
-              Clone and install <span class="mono">nanoclaw</span> per its
-              own README (Docker + an Anthropic API key are the main
-              prerequisites).
-            </li>
-            <li>
-              Run nanoclaw's onboarding flow to pair a Telegram bot.
-              You'll need a bot token from
-              <a href="https://t.me/BotFather">@BotFather</a>; nanoclaw
-              walks you through the pairing.
-            </li>
-            <li>
-              Confirm nanoclaw is healthy — DM the bot once and verify
-              you get a reply.
-            </li>
-          </ol>
-
           <p class="body install-step-prose">
-            <strong>Then, back in this repo:</strong>
+            Then, back in this repo:
           </p>
 <pre class="install-block"><code>./setup/install-agent.sh --nanoclaw ~/repos/nanoclaw</code></pre>
-          <p class="body install-step-prose">
-            This creates a new group at
-            <span class="mono">~/repos/nanoclaw/groups/librarian/</span>
-            with a rendered <span class="mono">container.json</span>
-            (vault + system mounts) and the agent's
-            <span class="mono">CLAUDE.local.md</span>; it also patches
-            nanoclaw's mount allowlist. Start the group through
-            nanoclaw's usual workflow.
-          </p>
           <p class="fineprint">
-            First run inside the container bootstraps
+            First call inside the container bootstraps
             <span class="mono">uv</span> + Python into
-            <span class="mono">vault/.bin/</span> — ~30&nbsp;s, looks like
-            a hang but isn't.
+            <span class="mono">vault/.bin/</span> — ~30&nbsp;s, looks like a hang
+            but isn't. Full instructions:
+            <a href="./docs.html#how-to/install-the-librarian-agent">how-to: install the Librarian agent</a>.
+          </p>
+        </li>
+
+        <li>
+          <p class="install-flow-title">
+            Open the vault in Obsidian <span class="install-opt">— if you like the graph view</span>
+          </p>
+          <p class="body install-step-prose">
+            The vault is plain Markdown with YAML frontmatter. Obsidian's
+            <span class="mono">File → Open vault</span> works directly; no
+            conversion. See
+            <a href="./docs.html#how-to/use-with-obsidian">how-to: use with Obsidian</a>.
           </p>
         </li>
 
       </ol>
+
+      <p class="install-foot">
+        <a class="cta ghost" href="./docs.html#tutorial/getting-started">Full walkthrough →</a>
+      </p>
     </section>
 
     <!-- FEATURES -->
@@ -662,12 +672,12 @@ uv run scripts/embed_corpus.py
 
         <article class="card">
           <p class="caps">Drop &amp; file</p>
-          <h3>Drag in a PDF; the viewer files it.</h3>
+          <h3>Drag in a PDF; the Viewer files it.</h3>
           <p>
-            Drop PDFs on the window (or <span class="mono">⌘N</span>) and the Viewer
-            files them directly — DOI extracted, citekey minted, note skeleton
-            written, <span class="mono">library.bib</span> updated. No external
-            agent in the loop.
+            Drop PDFs on the window (or <span class="mono">⌘N</span>). DOI extracted,
+            CrossRef metadata fetched, citekey minted, note skeleton written,
+            <span class="mono">library.bib</span> updated, sha256 deduped. No
+            external agent in the loop.
           </p>
         </article>
 
@@ -675,19 +685,19 @@ uv run scripts/embed_corpus.py
           <p class="caps">Three-pane reader</p>
           <h3>Library, PDF, notes — one window.</h3>
           <p>
-            Library list on the left, PDF in the middle, Markdown note on the right.
-            Open multiple papers in tabs. Page, zoom, and scroll position persist per
-            tab across launches.
+            Library list on the left, PDF in the middle (EmbedPDF with multi-color
+            highlights, persisted as JSON sidecars), CodeMirror Markdown editor on
+            the right. Open multiple papers in tabs.
           </p>
         </article>
 
         <article class="card">
           <p class="caps">Markdown notes</p>
-          <h3>Rendered article or raw editor.</h3>
+          <h3>Rendered or raw, your choice.</h3>
           <p>
-            Toggle between a typeset rendered view and CodeMirror 6. <span class="mono">⌘⇧N</span>
-            appends a timestamped section so a reading session leaves a dated trail in
-            the note.
+            Toggle between a typeset preview and CodeMirror 6.
+            <span class="mono">⌘⇧N</span> inserts a timestamped section so a
+            reading session leaves a dated trail in the note.
           </p>
         </article>
 
@@ -695,9 +705,11 @@ uv run scripts/embed_corpus.py
           <p class="caps">Semantic search</p>
           <h3>Query the whole collection by meaning.</h3>
           <p>
-            Flip the <span class="mono">SEM</span> switch in the search bar to query
-            <span class="mono">embeddings.db</span> through your embed server. Falls back
-            quietly when the server is unreachable.
+            Flip the <span class="mono">SEM</span> switch in the search bar to
+            query <span class="mono">embeddings.db</span> through the local embed
+            server. Requires the
+            <a href="#install">embedding server</a> running; falls back quietly to
+            keyword search when unreachable.
           </p>
         </article>
 
@@ -705,9 +717,10 @@ uv run scripts/embed_corpus.py
           <p class="caps">Tags &amp; manuscripts</p>
           <h3>Manuscripts as a live view of their sources.</h3>
           <p>
-            Per-paper tag pills with autocomplete from the whole library.
-            <span class="mono">cite:*</span> tags surface as a <strong>Manuscripts</strong>
-            sidebar section, so a manuscript becomes a live view of its sources.
+            Per-paper tag pills with autocomplete from the whole library. Papers
+            tagged <span class="mono">cite:&lt;manuscript&gt;</span> surface under
+            a <strong>Manuscripts</strong> sidebar section — a manuscript becomes
+            a live view of every paper you've decided to cite from it.
           </p>
         </article>
 
@@ -720,29 +733,32 @@ uv run scripts/embed_corpus.py
         <p class="caps">No. 005 · Plays well with Obsidian</p>
         <h2>Plain Markdown, end to end.</h2>
         <p class="body">
-          Every paper's note is a plain <span class="mono">.md</span> file with a fixed
-          YAML frontmatter — <span class="mono">citekey</span>, <span class="mono">title</span>,
-          <span class="mono">authors</span>, <span class="mono">doi</span>,
-          <span class="mono">tags</span>, an <span class="mono">abstract</span> block, and your body text.
-          Open the same folder in Obsidian and everything works: backlinks, graph view,
-          tag panes. The viewer reads what's on disk; no lock-in.
+          Every paper's note is a plain <span class="mono">.md</span> file with a
+          fixed YAML frontmatter — <span class="mono">citekey</span>,
+          <span class="mono">title</span>, <span class="mono">authors</span>,
+          <span class="mono">doi</span>, <span class="mono">tags</span>, an
+          <span class="mono">abstract</span> field, and the body. Open the same
+          folder in Obsidian and the usual features work: backlinks, graph view,
+          tag panes.
         </p>
         <p class="body">
-          The viewer preserves byte-for-byte everything outside the YAML block and body,
-          so co-editing the same notes from Obsidian or your terminal editor is safe.
+          The Viewer and the Librarian both preserve byte-for-byte everything
+          outside their canonical sections, so co-editing the same notes from
+          Obsidian or your terminal editor is safe.
         </p>
       </div>
       <aside class="codeblock">
 <pre><code>~/literature-vault/
 ├── PaperNotes/{citekey}.md     <span class="dim"># one note per paper</span>
 ├── PDFs/{citekey}.pdf          <span class="dim"># the actual papers</span>
-├── Bibfiles/{citekey}.bib      <span class="dim"># bibtex (agent-owned)</span>
+├── Bibfiles/{citekey}.bib      <span class="dim"># bibtex, one per paper</span>
 ├── SI/{citekey}-SI.pdf         <span class="dim"># supplementary info</span>
-├── Annotations/{citekey}.json  <span class="dim"># viewer highlights (viewer-owned)</span>
+├── Annotations/{citekey}.json  <span class="dim"># viewer highlights</span>
+├── Collections/{slug}/         <span class="dim"># curated groupings</span>
 ├── Inbox/                      <span class="dim"># drop zone</span>
-├── index.json                  <span class="dim"># dedup (agent-owned)</span>
-├── library.bib                 <span class="dim"># combined bib (agent-owned)</span>
-└── embeddings.db               <span class="dim"># sqlite-vec (agent-owned)</span></code></pre>
+├── index.json                  <span class="dim"># dedup (sha256/DOI/arXiv)</span>
+├── library.bib                 <span class="dim"># combined bib</span>
+└── embeddings.db               <span class="dim"># sqlite-vec, regenerable</span></code></pre>
       </aside>
     </section>
 
@@ -755,16 +771,18 @@ uv run scripts/embed_corpus.py
         <article class="lib-card">
           <p class="caps">Phone intake</p>
           <p class="body">
-            Send a PDF or arXiv link from anywhere; metadata extracted, citekey minted,
-            BibTeX written, dedup checked, note scaffolded.
+            Send a PDF, arXiv link, or DOI from anywhere. Metadata extracted from
+            CrossRef, citekey minted, BibTeX written, sha256 deduped, note
+            scaffolded. The agent replies with the citekey, the BibTeX entry, a
+            TL;DR, and suggested tags drawn from neighbouring papers.
           </p>
         </article>
         <article class="lib-card">
           <p class="caps">Reading context as you go</p>
           <p class="body">
-            Reply to the bot with why a paper made it into your library — what your
-            colleague said about it, a figure you want to remember, how it connects
-            to something you're reading. It gets appended to the note's
+            Reply to the bot with why a paper made it into your library — what a
+            colleague said, a figure you want to remember, how it connects to
+            something you're reading. It gets appended to the note's
             <span class="mono">## Why</span> or <span class="mono">## Notes</span>
             section.
           </p>
@@ -772,43 +790,66 @@ uv run scripts/embed_corpus.py
         <article class="lib-card">
           <p class="caps">Library queries by chat</p>
           <p class="body">
-            <em>"My papers on rate-and-state friction"</em> →
+            <em>"What do I have on rate-and-state friction?"</em> →
             <span class="mono">find_similar.py</span> over
-            <span class="mono">embeddings.db</span> → citekeys back, ranked. Useful
-            when you're away from your laptop.
+            <span class="mono">embeddings.db</span> → ranked citekeys back, each
+            with a one-line reason. Useful when you're away from your laptop.
           </p>
         </article>
         <article class="lib-card">
-          <p class="caps">Scheduled jobs</p>
+          <p class="caps">Auto-commit to git</p>
           <p class="body">
-            Weekly reading digests, dedup audits, embedding refresh — recurring tasks
-            run by the nanoclaw container. Each agent group has its own
-            <span class="mono">CLAUDE.local.md</span> with your conventions.
+            If your vault is a git repo, the agent commits after every edit with
+            a concise message. It never pushes — that's your call. If the vault
+            isn't a git repo, this is silently skipped.
           </p>
         </article>
       </div>
 
       <p class="body librarian-foot">
-        The Librarian runs as a <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a>
-        agent bound to a Telegram channel (Discord, Slack, iMessage, WhatsApp, … all
-        supported by nanoclaw if you'd rather not use Telegram). The contract between
-        Viewer and Librarian is the filesystem, not an API; any agent that produces
-        files in the vault layout will work.
+        The Librarian runs as a
+        <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a>
+        agent bound to a Telegram channel (Discord, Slack, iMessage, WhatsApp —
+        any chat surface nanoclaw supports). The contract between Viewer and
+        Librarian is the filesystem; any agent that produces files in the vault
+        layout will work.
       </p>
     </section>
 
     <!-- DOCS CTA -->
     <section class="band docs-cta">
       <p class="caps section-eyebrow">More</p>
-      <h2>Want the technical spec?</h2>
+      <h2>Read the docs.</h2>
       <p class="body docs-cta-prose">
-        The on-disk layout, citekey algorithm, note frontmatter, collections
-        format, intake pipeline, and the viewer's stack all live on a separate
-        page so this one stays light.
+        Documentation is organised as four sections — tutorial, how-to,
+        reference, and explanation — so each fact lives in exactly one place.
       </p>
-      <p class="docs-cta-link">
-        <a class="cta primary" href="./docs.html">Read the docs →</a>
-      </p>
+      <ul class="docs-cta-quad">
+        <li>
+          <a href="./docs.html#tutorial/getting-started">
+            <span class="caps">Tutorial</span>
+            <span class="docs-cta-blurb">Linear walkthrough from clone to first paper filed.</span>
+          </a>
+        </li>
+        <li>
+          <a href="./docs.html">
+            <span class="caps">How-to</span>
+            <span class="docs-cta-blurb">Recipes for the optional add-ons and common tasks.</span>
+          </a>
+        </li>
+        <li>
+          <a href="./docs.html">
+            <span class="caps">Reference</span>
+            <span class="docs-cta-blurb">Vault layout, frontmatter schema, citekey algorithm, scripts.</span>
+          </a>
+        </li>
+        <li>
+          <a href="./docs.html">
+            <span class="caps">Explanation</span>
+            <span class="docs-cta-blurb">Why two surfaces, why no database, why citekeys.</span>
+          </a>
+        </li>
+      </ul>
     </section>
 
   </main>
@@ -816,18 +857,24 @@ uv run scripts/embed_corpus.py
   <footer>
     <div class="footer-inner">
       <span class="caps">Literature Vault · No. 001</span>
-      <nav>
+      <nav aria-label="Footer">
         <a href="https://github.com/henriasv/literature-vault-system">Source</a>
         <a href="https://github.com/henriasv/literature-vault-system/issues">Issues</a>
-        <a href="https://github.com/henriasv/literature-vault-system/blob/main/README.md">README</a>
+        <a href="./docs.html">Docs</a>
+        <a href="./docs.html#explanation/two-surfaces-one-vault">Design rationale</a>
       </nav>
     </div>
   </footer>
 
   <script>
     // Phone carousel: click a dot to jump to that slide and pause auto-rotation.
+    // Auto-rotation is paused if the user prefers reduced motion.
     (function () {
+      var reduced = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
       document.querySelectorAll('.phoneshell').forEach(function (shell) {
+        if (reduced) shell.classList.add('paused');
         var slides   = shell.querySelectorAll('.phone-slide');
         var captions = shell.querySelectorAll('.phone-caption-text');
         var dots     = shell.querySelectorAll('.dot');
@@ -846,6 +893,7 @@ uv run scripts/embed_corpus.py
     })();
 
     // Notes typewriter: types a markdown note into the right pane, then restarts.
+    // Disabled entirely under prefers-reduced-motion.
     (function () {
       var el = document.querySelector('.ash-note-raw .typewriter');
       if (!el) return;
@@ -874,14 +922,12 @@ uv run scripts/embed_corpus.py
       var i = 0;
       function tick() {
         if (i > note.length) {
-          // hold the finished note for a beat, then restart
           setTimeout(function () { i = 0; el.textContent = ''; tick(); }, 6000);
           return;
         }
         el.textContent = note.slice(0, i);
         var ch = note.charAt(i - 1);
         i += 1;
-        // pacing — slightly humanised typing rhythm
         var d = 22 + Math.random() * 28;
         if (ch === ' ') d = 18;
         if (ch === '\n') d = 110;
@@ -889,7 +935,6 @@ uv run scripts/embed_corpus.py
         setTimeout(tick, d);
       }
 
-      // Start when the pane scrolls into view (it's at the top, so usually immediately).
       var started = false;
       var obs = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {

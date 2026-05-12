@@ -1,81 +1,25 @@
 # literature-vault-system
 
-A self-hosted reading + organising system for academic papers. Two pieces
-that share one repo:
+A self-hosted reading + organising system for academic papers. Two surfaces share one folder on disk:
 
-- **Viewer** — a macOS desktop app (Tauri + Svelte) that reads PDFs and
-  edits Markdown notes side-by-side. Drop a PDF in and it's auto-filed
-  by DOI; drag rows into collections; semantic search across your notes.
-- **Librarian agent** — a NanoClaw-based Claude agent that handles the
-  asynchronous bits (filing PDFs you send by Telegram/Slack, suggesting
-  tags, appending notes, answering "what should I cite for X?"). Optional.
+- **Viewer** — a macOS desktop app (Tauri + Svelte) for reading PDFs and editing Markdown notes side-by-side.
+- **Librarian** — an optional Telegram bot (a [nanoclaw](https://github.com/henriasv/nanoclaw) agent) for filing PDFs and asking library questions from your phone.
 
-Both operate on the same on-disk vault layout: PDFs, BibTeX entries, and
-one Markdown note per paper, plus a folder of "collections" pointing at
-citekeys. The vault is just files; there's no database. The repo ships
-the deterministic Python pipeline (extraction, CrossRef + DataCite
-lookup, citekey minting, BibTeX writing, embedding refresh) that the
-viewer and agent both invoke — so a paper filed via either path ends up
-identical on disk.
+Both operate on the same on-disk **vault**: PDFs, BibTeX entries, one Markdown note per paper, plus user-curated collections. The contract between surfaces is the filesystem — nothing else.
+
+## Where to go next
+
+- **New here?** → [Tutorial: getting started](docs/tutorial/getting-started.md)
+- **Looking up how to do a thing?** → [How-to guides](docs/how-to/)
+- **Looking up exact details?** → [Reference](docs/reference/)
+- **Curious why it's shaped this way?** → [Explanation](docs/explanation/)
 
 ## Status
 
-Pre-1.0. Built as a personal tool; sharing-friendly but not a polished
-product. macOS only for now (the viewer uses macOS overlay title bars
-and a few AppKit shortcuts; Linux/Windows ports possible later). No
-signed `.dmg` yet — you build from source.
+Pre-1.0. Built as a personal tool; sharing-friendly but not a polished product. macOS-only for now. No signed `.dmg` — you build from source.
 
-## Quick start
-
-Prerequisites: Apple Silicon Mac + Homebrew, with `brew install rustup-init node uv`
-and Xcode Command Line Tools. See [GETTING_STARTED.md](GETTING_STARTED.md) §
-*Prerequisites* for the full list.
-
-```bash
-git clone https://github.com/<you>/literature-vault-system ~/repos/literature-vault-system
-cd ~/repos/literature-vault-system
-
-# 1. Build & install the viewer (.app → /Applications)
-./setup/install-viewer.sh
-
-# 2. Scaffold a fresh vault (path is remembered in setup/.local.conf)
-./setup/init-vault.sh ~/literature-vault
-
-# 3. Point the viewer at it
-./setup/configure-viewer.sh
-
-# 4. (Optional) launchd-supervise the embedding server
-./setup/install-embed-server.sh
-
-# 5. (Optional) install the librarian agent into your existing nanoclaw
-./setup/install-agent.sh --nanoclaw ~/repos/nanoclaw
-```
-
-After step 2, the vault path is stored in `setup/.local.conf` (gitignored)
-and steps 3–5 default to it. Pass `--vault <path>` to any script if you
-want to override.
-
-See [GETTING_STARTED.md](GETTING_STARTED.md) for the unhurried version
-with prerequisites and troubleshooting.
-
-## What's in this repo
-
-```
-viewer/      Tauri + Svelte desktop app (the reader)
-scripts/    Deterministic Python pipeline (filing, citekey scheme, …)
-agent/      Nanoclaw group template (CLAUDE.local.md + container.json)
-docs/       DESIGN.md (vault layout), CITATION_KEYS.md (key algorithm)
-setup/      install-viewer.sh, init-vault.sh, configure-viewer.sh,
-            install-agent.sh, install-embed-server.sh, _lib.sh, launchd/
-```
-
-## What's NOT in this repo
-
-Your actual papers and notes. Those live in a separate **vault**
-directory (default `~/literature-vault/`) that you create with
-`setup/init-vault.sh`. The vault is per-user; this repo is the system
-that operates on it.
+See [Known limitations](docs/KNOWN_LIMITATIONS.md) for what isn't built yet.
 
 ## License
 
-See [LICENSE](LICENSE).
+[MIT](LICENSE).
