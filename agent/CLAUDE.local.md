@@ -186,7 +186,10 @@ Always set these env vars before invoking uv (or source `/workspace/extra/vault/
 export PATH="/workspace/extra/vault/.bin:$PATH"
 export UV_CACHE_DIR=/workspace/extra/vault/.uv-cache
 export UV_PYTHON_INSTALL_DIR=/workspace/extra/vault/.uv-pythons
+export LITERATURE_VAULT=/workspace/extra/vault
 ```
+
+`LITERATURE_VAULT` tells the scripts where the vault lives. Without it the scripts compute vault root from the script's own path, which is wrong here — scripts live under `/workspace/extra/system/`, not under the vault.
 
 Run scripts with `uv run /workspace/extra/system/scripts/<name>.py [args]`. PEP 723 inline metadata in each script declares deps; uv resolves and caches them automatically:
 ```python
