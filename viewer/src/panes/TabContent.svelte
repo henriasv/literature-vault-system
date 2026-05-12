@@ -63,11 +63,23 @@
     </div>
   {:else}
     {#each tabsState.tabs as tab, i (tab.citekey)}
-      <div class="tab-pane" class:active={i === tabsState.activeIndex}>
+      {@const isActive = i === tabsState.activeIndex}
+      <div class="tab-pane" class:active={isActive}>
         <PaneGroup direction="horizontal" {onLayoutChange}>
           <Pane defaultSize={initialPdfPct} minSize={20} maxSize={80}>
             {#if useEmbedPdf}
-              <EmbedPDFView citekey={tab.citekey} />
+              <!-- EmbedPDF's pdfium engine is effectively a singleton —
+                   if multiple EmbedPDFView instances mount, they all
+                   render whichever document the worker most recently
+                   opened, so every tab shows the latest PDF. Workaround:
+                   mount the PDF pane only for the active tab. Tab
+                   switches reload the PDF (no preserved scroll / zoom
+                   yet); the NoteEditor in the right pane stays mounted
+                   across switches so the editor buffer + cursor
+                   survive. -->
+              {#if isActive}
+                <EmbedPDFView citekey={tab.citekey} />
+              {/if}
             {:else}
               <PDFView citekey={tab.citekey} page={tab.pdfPage} zoom={tab.pdfZoom} />
             {/if}
