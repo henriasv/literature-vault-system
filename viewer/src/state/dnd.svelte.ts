@@ -70,16 +70,21 @@ export function setHoverSlug(slug: string | null): void {
  * dragend event's clientX/Y, in case Tauri's over events didn't fire.
  */
 export async function finishInternalDrag(e?: DragEvent): Promise<void> {
-  /* Decide the drop target STRICTLY from the dragend event's
-   * clientX/clientY — the actual cursor position at release. Earlier
-   * the function trusted `dndState.hoverSlug` first and only fell
-   * back to the dragend coords; that made the drop "overly liberal"
-   * — Tauri's last `over` event isn't guaranteed to fire on the
-   * release pixel, so a hoverSlug set while the cursor was passing
-   * through an earlier row would survive and capture the drop even
-   * after the user moved off. Now: if the cursor isn't on a real
-   * drop target at release, nothing drops. dndState.hoverSlug stays
-   * around only for the visual highlight during drag. */
+  /* Resolve the drop target with a two-step fallback.
+   *
+   * 1) Prefer the dragend event's clientX/clientY (the actual cursor
+   *    position at release) through document.elementFromPoint. This
+   *    is the most accurate signal when WKWebView delivers real
+   *    coordinates.
+   *
+   * 2) Fall back to dndState.hoverSlug. Under Tauri/WKWebView the
+   *    HTML5 dragend event sometimes arrives with clientX=clientY=0
+   *    (the OS handled the gesture and the browser only saw a
+   *    synthesised dragend), so step 1 yields nothing. Tauri's "over"
+   *    events keep hoverSlug current and pass null whenever the
+   *    cursor isn't on a real drop target, so a non-null hoverSlug
+   *    at release accurately means the cursor was on that slug when
+   *    the user let go. */
   let slug: string | null = null;
   if (e && (e.clientX > 0 || e.clientY > 0)) {
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
@@ -87,6 +92,9 @@ export async function finishInternalDrag(e?: DragEvent): Promise<void> {
       const target = el.closest<HTMLElement>("[data-drop-target-slug]");
       if (target) slug = target.getAttribute("data-drop-target-slug");
     }
+  }
+  if (!slug && dndState.hoverSlug) {
+    slug = dndState.hoverSlug;
   }
   const cks = [...dndState.citekeys];
   endInternalDrag();

@@ -79,6 +79,7 @@
     startInternalDrag,
     finishInternalDrag,
   } from "../state/dnd.svelte";
+  import { organizeState } from "../state/organize.svelte";
   import {
     inboxState,
     inboxNav,
@@ -170,7 +171,8 @@
    * actions). Switching back to any collection (or "all papers")
    * returns to the paper table.
    */
-  let viewMode = $state<"papers" | "inbox">("papers");
+  let viewMode = $state<"papers" | "inbox">(organizeState.viewMode);
+  $effect(() => { organizeState.viewMode = viewMode; });
 
   /* When the user clicks "find" on an Inbox item, instead of expanding an
    * inline form (where the PDF isn't visible) we open a modal with the PDF
@@ -460,7 +462,8 @@
 
   /* ----- multi-select & drag-from-table ---------------------------------- */
 
-  let selected = $state<Set<string>>(new Set());
+  let selected = $state<Set<string>>(organizeState.selected);
+  $effect(() => { organizeState.selected = selected; });
 
   function toggleSelected(citekey: string) {
     const next = new Set(selected);
@@ -792,12 +795,14 @@
    * underneath the organize overlay stay mounted regardless, so closing
    * the preview returns to the table without re-fetching anything. */
 
-  let previewCitekey = $state<string | null>(null);
+  let previewCitekey = $state<string | null>(organizeState.previewCitekey);
+  $effect(() => { organizeState.previewCitekey = previewCitekey; });
   /** Path of an Inbox PDF being previewed. Mutually exclusive with
    *  previewCitekey — the preview overlay branches on which one is
    *  set: paper preview (PDF + notes, library row) vs inbox preview
    *  (just the PDF, with a "file this paper" affordance). */
-  let previewInboxPath = $state<string | null>(null);
+  let previewInboxPath = $state<string | null>(organizeState.previewInboxPath);
+  $effect(() => { organizeState.previewInboxPath = previewInboxPath; });
   let previewInboxFilename = $state<string>("");
 
   function previewPaper(citekey: string) {
