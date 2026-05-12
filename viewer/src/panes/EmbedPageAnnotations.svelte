@@ -21,11 +21,13 @@
   import {
     AnnotationLayer,
     createRenderer,
+    useAnnotationCapability,
   } from "@embedpdf/plugin-annotation/svelte";
   import { useZoom } from "@embedpdf/plugin-zoom/svelte";
   import { PdfAnnotationSubtype, type PdfAnnotationObject, type PdfTextAnnoObject } from "@embedpdf/models";
   import EmbedAnnotationSelectionMenu from "./EmbedAnnotationSelectionMenu.svelte";
   import EmbedStickyNoteRenderer from "./EmbedStickyNoteRenderer.svelte";
+  import { pdfNavState } from "../state/pdfNav.svelte";
 
   type Props = {
     documentId: string;
@@ -44,6 +46,31 @@
     component: EmbedStickyNoteRenderer as any,
     interactionDefaults: { isDraggable: true, isResizable: false, isRotatable: false },
   });
+
+  /* Flash overlay: when the Annotations tab in the right pane single-
+   * clicks a row, pdfNavState.flash is set for ~800ms. If the annotation
+   * lives on THIS page, draw a thin accent-coloured outline around its
+   * bounding rect that fades out via CSS animation. Keying the div on
+   * the flash timestamp restarts the animation when the same row is
+   * clicked twice in a row. */
+  const annotation = useAnnotationCapability();
+  type FlashRect = { x: number; y: number; w: number; h: number };
+  const flashRect = $derived.by<FlashRect | null>(() => {
+    const flash = pdfNavState.flash;
+    if (!flash) return null;
+    const ann = annotation.provides?.getAnnotationById(flash.annotationId);
+    if (!ann) return null;
+    if (ann.object.pageIndex !== pageIndex) return null;
+    const r = ann.object.rect;
+    if (!r) return null;
+    return {
+      x: r.origin.x * scale,
+      y: r.origin.y * scale,
+      w: r.size.width * scale,
+      h: r.size.height * scale,
+    };
+  });
+  const flashKey = $derived(pdfNavState.flash?.ts ?? 0);
 </script>
 
 <AnnotationLayer
@@ -56,3 +83,32 @@
     <EmbedAnnotationSelectionMenu {documentId} {...props} />
   {/snippet}
 </AnnotationLayer>
+
+{#if flashRect}
+  {#key flashKey}
+    <div
+      class="flash-outline"
+      style:left="{flashRect.x}px"
+      style:top="{flashRect.y}px"
+      style:width="{flashRect.w}px"
+      style:height="{flashRect.h}px"
+    ></div>
+  {/key}
+{/if}
+
+<style>
+  .flash-outline {
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 1.5px solid var(--accent, #7a3a14);
+    border-radius: 2px;
+    box-shadow: 0 0 0 3px rgba(122, 58, 20, 0.18);
+    z-index: 20;
+    animation: flash-fade 0.8s ease-out forwards;
+  }
+  @keyframes flash-fade {
+    0%, 55% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+</style>

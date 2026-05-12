@@ -50,9 +50,11 @@
   import EmbedHighlightSelectionMenu from "./EmbedHighlightSelectionMenu.svelte";
   import EmbedPageAnnotations from "./EmbedPageAnnotations.svelte";
   import EmbedAnnotationKeybinds from "./EmbedAnnotationKeybinds.svelte";
+  import EmbedJumpListener from "./EmbedJumpListener.svelte";
   import { pdfUrlFor } from "../lib/pdf";
   import { readAnnotations, writeAnnotations } from "../lib/vault";
   import { HIGHLIGHT_COLORS } from "../lib/highlight-colors";
+  import { bumpSidecarVersion } from "../state/pdfNav.svelte";
 
   type Props = { citekey: string };
   let { citekey }: Props = $props();
@@ -212,6 +214,9 @@
           const items = (await provides.exportAnnotations({}).toPromise()) ?? [];
           const userOnly = items.filter((it) => !baseline!.has(it.annotation.id));
           await writeAnnotations(citekey, JSON.stringify(userOnly));
+          /* Tell the right-pane Annotations tab that its cached list is
+           * stale — it re-reads the sidecar JSON on this signal. */
+          bumpSidecarVersion();
         } catch (e) {
           console.warn("[EmbedPDF] failed to save annotation sidecar", e);
         }
@@ -268,6 +273,7 @@
           <div class="banner muted">Loading document…</div>
         {:else}
           <EmbedPdfToolbar documentId={activeDocumentId} />
+          <EmbedJumpListener documentId={activeDocumentId} {citekey} />
 
           <DocumentContent documentId={activeDocumentId}>
             {#snippet children({ isLoading, isError, isLoaded })}

@@ -94,6 +94,11 @@
     /* Only the primary button — right-click/middle-click should not
      * initiate a drag or selection. */
     if (e.button !== 0) return;
+    /* Block the browser's default mouse-down → start-text-selection
+     * behaviour, otherwise sweeping the pointer across PDF text glyphs
+     * during a drag flashes a selection on the page underneath. */
+    e.preventDefault();
+    e.stopPropagation();
     drag = {
       pointerId: e.pointerId,
       startX: e.clientX,
@@ -107,6 +112,8 @@
 
   function onPointerMove(e: PointerEvent) {
     if (!drag || e.pointerId !== drag.pointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
     const dx = e.clientX - drag.startX;
     const dy = e.clientY - drag.startY;
     if (!drag.moved && Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
@@ -128,6 +135,8 @@
 
   function onPointerUp(e: PointerEvent) {
     if (!drag || e.pointerId !== drag.pointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
     const wasMoved = drag.moved;
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
@@ -147,6 +156,7 @@
   style:pointer-events={pointerEvents}
   style:cursor={cursor}
   style:touch-action="none"
+  style:user-select="none"
   onpointerdown={onPointerDown}
   onpointermove={onPointerMove}
   onpointerup={onPointerUp}

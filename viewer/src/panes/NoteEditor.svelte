@@ -16,7 +16,7 @@
   import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { marked } from "marked";
-  import { readNote, writeNote, setTags, splitNote, paperLabel } from "../lib/vault";
+  import { readNote, writeNote, setTags, splitNote, paperLabel, readAnnotations } from "../lib/vault";
   import {
     libraryState as libraryStateRef,
     paperByCitekey,
@@ -25,6 +25,7 @@
     refreshLibrary,
     toggleTagFilter,
   } from "../state/library.svelte";
+  import { pdfNavState, requestJump, requestFlash } from "../state/pdfNav.svelte";
 
   let { citekey }: { citekey: string } = $props();
 
@@ -53,11 +54,124 @@
   let rawMode = $state(false);
   let detailsOpen = $state(false);
 
-  /** Rendered ↔ raw toggle for the body view. RENDERED uses marked() to render
-   *  the markdown body to HTML; RAW shows the underlying CodeMirror editor. */
-  let viewMode = $state<"rendered" | "raw">("rendered");
+  /** Rendered ↔ raw ↔ annotations toggle for the body view.
+   *   - rendered:    marked() HTML from the note body
+   *   - raw:         CodeMirror editor
+   *   - annotations: list of highlights + sticky notes from the sidecar JSON
+   */
+  let viewMode = $state<"rendered" | "raw" | "annotations">("rendered");
   /** Mirrors the editor doc so the rendered view recomputes when content changes. */
   let bodyText = $state("");
+
+  /* ---- Annotations tab data ---------------------------------------------
+   * Parsed AnnotationTransferItem[] from `Annotations/{citekey}.json`. We
+   * re-fetch when citekey changes, when the tab becomes active, or when
+   * `sidecarVersion` is bumped by EmbedPDFView after a save (so adding /
+   * editing in the PDF pane refreshes the list reactively). */
+  /* Numeric subtype IDs — kept inline to avoid pulling the EmbedPDF
+   * runtime in here. Matches PdfAnnotationSubtype.HIGHLIGHT / .TEXT. */
+  const HIGHLIGHT_SUBTYPE = 9;
+  const STICKY_SUBTYPE = 1;
+
+  interface AnnotationRow {
+    id: string;
+    pageIndex: number;            // 0-based
+    kind: "highlight" | "sticky" | "other";
+    color: string | null;
+    excerpt: string;              // highlight only
+    comment: string;              // user note (custom.comment for highlights, contents for stickies)
+    /** Page-coord midpoint of the rect — passed as `pageCoordinates` to
+     *  scrollToPage so the annotation lands at viewport centre. */
+    center: { x: number; y: number } | null;
+  }
+  let annotationRows = $state<AnnotationRow[]>([]);
+  let annotationsLoadError = $state<string | null>(null);
+
+  async function loadAnnotations(ck: string): Promise<void> {
+    try {
+      const raw = await readAnnotations(ck);
+      if (!raw || !raw.trim()) {
+        annotationRows = [];
+        annotationsLoadError = null;
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        annotationRows = [];
+        annotationsLoadError = "Sidecar JSON is not an array";
+        return;
+      }
+      const rows: AnnotationRow[] = [];
+      for (const item of parsed) {
+        const a = item?.annotation;
+        if (!a || typeof a.id !== "string") continue;
+        const rect = a.rect;
+        let center: { x: number; y: number } | null = null;
+        if (
+          rect && rect.origin && rect.size &&
+          typeof rect.origin.x === "number" && typeof rect.origin.y === "number" &&
+          typeof rect.size.width === "number" && typeof rect.size.height === "number"
+        ) {
+          center = {
+            x: rect.origin.x + rect.size.width / 2,
+            y: rect.origin.y + rect.size.height / 2,
+          };
+        }
+        const kind: AnnotationRow["kind"] =
+          a.type === HIGHLIGHT_SUBTYPE ? "highlight" :
+          a.type === STICKY_SUBTYPE ? "sticky" : "other";
+        const contentsStr = typeof a.contents === "string" ? a.contents : "";
+        const customComment =
+          (a.custom && typeof a.custom.comment === "string" && a.custom.comment) || "";
+        const color =
+          (typeof a.strokeColor === "string" && a.strokeColor) ||
+          (typeof a.color === "string" && a.color) || null;
+        rows.push({
+          id: a.id,
+          pageIndex: typeof a.pageIndex === "number" ? a.pageIndex : 0,
+          kind,
+          color: kind === "highlight" ? color : null,
+          excerpt: kind === "highlight" ? contentsStr : "",
+          comment: kind === "sticky" ? contentsStr : customComment,
+          center,
+        });
+      }
+      rows.sort((x, y) => x.pageIndex - y.pageIndex);
+      annotationRows = rows;
+      annotationsLoadError = null;
+    } catch (e) {
+      annotationsLoadError = String(e);
+      annotationRows = [];
+    }
+  }
+
+  $effect(() => {
+    /* Refetch reactively: dep on citekey + viewMode + sidecarVersion. */
+    const ck = citekey;
+    void viewMode;
+    void pdfNavState.sidecarVersion;
+    void loadAnnotations(ck);
+  });
+
+  /* Single click = scroll + flash; double click = scroll + open menu.
+   * Browsers fire two `click` events before `dblclick`, so the single-
+   * click action runs twice when double-clicking — both produce the
+   * same scroll-to-target and flash, which is fine. The dblclick handler
+   * additionally fires selectAnnotation; by the time it does, the first
+   * click already scrolled the page into the DOM. */
+  function navigateTo(row: AnnotationRow, opts: { open: boolean }): void {
+    requestJump(citekey, row.pageIndex + 1, {
+      centerOn: row.center ?? undefined,
+      openAnnotationId: opts.open ? row.id : undefined,
+    });
+  }
+  function onAnnotationRowClick(row: AnnotationRow): void {
+    navigateTo(row, { open: false });
+    requestFlash(citekey, row.id);
+  }
+  function onAnnotationRowDblClick(row: AnnotationRow): void {
+    navigateTo(row, { open: true });
+  }
 
   marked.setOptions({ gfm: true, breaks: false });
   const renderedHtml = $derived(
@@ -622,6 +736,9 @@
     <div class="view-toggle">
       <button class:on={viewMode === "raw"} onclick={() => (viewMode = "raw")}>Edit</button>
       <button class:on={viewMode === "rendered"} onclick={() => (viewMode = "rendered")}>Preview</button>
+      <button class:on={viewMode === "annotations"} onclick={() => (viewMode = "annotations")}>
+        Annotations{#if annotationRows.length > 0} <span class="count">{annotationRows.length}</span>{/if}
+      </button>
     </div>
   {/if}
 
@@ -632,7 +749,57 @@
         {@html renderedHtml}
       </article>
     {/if}
-    <div bind:this={host} class="cm-host" class:hidden={viewMode === "rendered" && !rawMode}></div>
+    {#if viewMode === "annotations" && !rawMode}
+      <div class="annotations-list">
+        {#if annotationsLoadError}
+          <div class="ann-error">Couldn't read annotation sidecar: {annotationsLoadError}</div>
+        {:else if annotationRows.length === 0}
+          <div class="ann-empty">No highlights or sticky notes yet. Select text or use the Annotate menu in the PDF.</div>
+        {:else}
+          {#each annotationRows as row (row.id)}
+            <button
+              type="button"
+              class="ann-row"
+              onclick={() => onAnnotationRowClick(row)}
+              ondblclick={() => onAnnotationRowDblClick(row)}
+              title="Click to jump · double-click to open"
+            >
+              {#if row.kind === "sticky"}
+                <span class="ann-icon" aria-hidden="true">●</span>
+              {:else}
+                <span
+                  class="ann-swatch"
+                  style:background={row.color ?? "transparent"}
+                  aria-hidden="true"
+                ></span>
+              {/if}
+              <span class="ann-page">p.{row.pageIndex + 1}</span>
+              <span class="ann-body">
+                {#if row.kind === "highlight"}
+                  {#if row.excerpt}
+                    <span class="ann-excerpt">“{row.excerpt}”</span>
+                  {:else}
+                    <span class="ann-excerpt ann-excerpt-empty">(no excerpt)</span>
+                  {/if}
+                  {#if row.comment}
+                    <span class="ann-comment">{row.comment}</span>
+                  {/if}
+                {:else if row.kind === "sticky"}
+                  {#if row.comment}
+                    <span class="ann-comment">{row.comment}</span>
+                  {:else}
+                    <span class="ann-excerpt ann-excerpt-empty">(empty note)</span>
+                  {/if}
+                {:else}
+                  {#if row.comment}<span class="ann-comment">{row.comment}</span>{/if}
+                {/if}
+              </span>
+            </button>
+          {/each}
+        {/if}
+      </div>
+    {/if}
+    <div bind:this={host} class="cm-host" class:hidden={viewMode !== "raw" && !rawMode}></div>
   </div>
 
   <div class="status">
@@ -919,6 +1086,116 @@
   .view-toggle button.on {
     color: var(--ink);
     border-bottom-color: var(--accent);
+  }
+  .view-toggle .count {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 0 5px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--ink-08, rgba(26, 22, 18, 0.08));
+    border-radius: 8px;
+    letter-spacing: 0;
+    vertical-align: 1px;
+  }
+
+  /* Annotations list — same horizontal padding as .rendered for visual
+     alignment with Preview. Buttons are full-width rows. */
+  .annotations-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 6px 0 12px;
+    background: var(--panel);
+  }
+  .ann-empty,
+  .ann-error {
+    padding: 14px 22px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 12px;
+    color: var(--ink-50, rgba(26, 22, 18, 0.55));
+    line-height: 1.5;
+  }
+  .ann-error {
+    color: #b03020;
+    font-style: normal;
+  }
+  .ann-row {
+    display: grid;
+    grid-template-columns: 10px 36px 1fr;
+    gap: 10px;
+    align-items: start;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 22px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink);
+    border-bottom: 1px solid var(--ink-08, rgba(26, 22, 18, 0.06));
+  }
+  .ann-row:hover {
+    background: var(--hover, rgba(26, 22, 18, 0.04));
+  }
+  .ann-row:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  .ann-swatch {
+    width: 10px;
+    height: 10px;
+    margin-top: 4px;
+    border-radius: 50%;
+    border: 1px solid var(--ink-12, rgba(26, 22, 18, 0.18));
+  }
+  .ann-icon {
+    width: 10px;
+    margin-top: 1px;
+    text-align: center;
+    color: #FFCD45;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .ann-page {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.4px;
+    padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ann-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+  .ann-excerpt {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--ink-70, rgba(26, 22, 18, 0.78));
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ann-excerpt-empty {
+    font-style: italic;
+    color: var(--ink-30, rgba(26, 22, 18, 0.35));
+  }
+  .ann-comment {
+    font-family: var(--serif);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink);
+    white-space: pre-wrap;
   }
 
   .cm-host {
