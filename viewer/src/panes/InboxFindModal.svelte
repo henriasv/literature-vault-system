@@ -74,12 +74,12 @@
         manualBibtex = stub;
         manualTouched = false;
         autoFilledOnce = true;
-        toast.info("Pre-filled from PDF metadata — review and edit before saving");
+        toast("Pre-filled from PDF metadata — review and edit before saving", "info");
       } else {
-        toast.error("Couldn't extract metadata from the PDF — vault may be missing extract_pdf_meta.py");
+        toast("Couldn't extract metadata from the PDF — vault may be missing extract_pdf_meta.py", "error");
       }
     } catch (e) {
-      toast.error(`Auto-fill failed: ${e}`);
+      toast(`Auto-fill failed: ${e}`, "error");
     } finally {
       autoFilling = false;
     }
@@ -101,19 +101,19 @@
       onFiled?.(outcome);
       switch (outcome.status) {
         case "filed":
-          toast.info(`Filed as ${outcome.citekey ?? "?"}`);
+          toast(`Filed as ${outcome.citekey ?? "?"}`, "info");
           break;
         case "duplicate":
-          toast.info(`Duplicate of ${outcome.citekey ?? "?"}`);
+          toast(`Duplicate of ${outcome.citekey ?? "?"}`, "info");
           break;
         default:
-          toast.error(outcome.detail ?? outcome.status);
+          toast(outcome.detail ?? outcome.status, "error");
       }
       await refreshInbox();
       closeSearchFor(pdfPath);
       onClose();
     } catch (e) {
-      toast.error(String(e));
+      toast(String(e), "error");
     } finally {
       manualSubmitting = false;
     }
@@ -291,7 +291,7 @@
         const ctx = cnv.getContext("2d");
         if (!ctx) return;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        await page.render({ canvas: cnv, canvasContext: ctx, viewport }).promise;
+        await page.render({ canvasContext: ctx, viewport }).promise;
         if (myToken !== renderToken) return;
         /* Selectable text overlay — same pattern as PDFView / ReidentifyModal. */
         if (textLayerEl) {
@@ -333,17 +333,17 @@
       onFiled?.(outcome);
       switch (outcome.status) {
         case "filed":
-          toast.info(`Filed as ${outcome.citekey ?? "?"}`);
+          toast(`Filed as ${outcome.citekey ?? "?"}`, "info");
           break;
         case "duplicate":
-          toast.info(`Duplicate of ${outcome.citekey ?? "?"}`);
+          toast(`Duplicate of ${outcome.citekey ?? "?"}`, "info");
           break;
         default:
-          toast.error(outcome.detail ?? outcome.status);
+          toast(outcome.detail ?? outcome.status, "error");
       }
       onClose();
     } catch (e) {
-      toast.error(String(e));
+      toast(String(e), "error");
     }
   }
 

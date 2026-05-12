@@ -455,21 +455,13 @@
     </button>
     {#if collectionsFoldoutOpen}
       <div class="cf-body">
-        <button
-          class="cf-row all-row"
-          class:active={!libraryState.selectedCollection}
-          onclick={() => setCollectionFilter(null)}>
-          <span class="cf-icon mono">∀</span>
-          <span class="cf-leaf">all papers</span>
-          <span class="cf-c mono">{libraryState.papers.length}</span>
-        </button>
-
-        <!-- Inbox pseudo-row — same level as a top-level collection but
-             distinctly styled (faint accent typeface; the count badge
-             turns burnt-umber when there are unfiled PDFs waiting).
-             Clicking it flips the app into Organizing mode and the
-             Collections panel auto-switches to the inbox view, so the
-             unfiled-papers list is one click away from the reader. -->
+        <!-- Inbox pseudo-row sits at the top: it's not a subset of
+             "all papers" (it's unfiled PDFs that aren't in the library
+             yet), so listing it above keeps the hierarchy honest —
+             everything below is a view onto the filed corpus.
+             Clicking flips the app into Organizing mode and the
+             Collections panel auto-switches to the inbox view, so
+             the unfiled-papers list is one click away from the reader. -->
         <button
           class="cf-row all-row cf-inbox-row"
           class:has-items={inboxState.items.length > 0}
@@ -480,7 +472,17 @@
           title="Open the Inbox in Organizing view">
           <span class="cf-icon mono">⌬</span>
           <span class="cf-leaf">inbox</span>
+          <span class="cf-jumphint">→ organizing</span>
           <span class="cf-c mono">{inboxState.items.length}</span>
+        </button>
+
+        <button
+          class="cf-row all-row"
+          class:active={!libraryState.selectedCollection}
+          onclick={() => setCollectionFilter(null)}>
+          <span class="cf-icon mono">∀</span>
+          <span class="cf-leaf">all papers</span>
+          <span class="cf-c mono">{libraryState.papers.length}</span>
         </button>
 
         {#each foldoutTree as node (node.slug)}
@@ -1047,6 +1049,22 @@
   .cf-inbox-row.has-items .cf-leaf,
   .cf-inbox-row.has-items .cf-c {
     color: var(--accent);
+  }
+  /* Tells the user the click switches to Organizing view. Sits between
+     the "inbox" label and the count badge; pushes the count to the
+     right edge so the row reads "⌬ inbox → organizing       N". */
+  .cf-inbox-row .cf-jumphint {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink-50);
+    margin-right: auto;
+  }
+  .cf-inbox-row.has-items .cf-jumphint {
+    color: var(--accent);
+    opacity: 0.7;
   }
   /* Drop target highlight — dashed accent border-left + faint accent
      wash. Visible while a library row is being dragged over a

@@ -60,10 +60,10 @@
     manualSubmitting = true;
     try {
       await reassignWithBibtex(citekey, manualBibtex);
-      toast.info(`Reassigned ${citekey} from manual BibTeX`);
+      toast(`Reassigned ${citekey} from manual BibTeX`, "info");
       closeReidentify();
     } catch (e) {
-      toast.error(String(e));
+      toast(String(e), "error");
     } finally {
       manualSubmitting = false;
     }
@@ -91,7 +91,7 @@
     /* Refuse if the detected DOI matches the existing one — re-running would
      * be a no-op rename. Tell the user instead of silently doing nothing. */
     if (detectResult.doi && meta?.doi && detectResult.doi === meta.doi) {
-      toast.info("Detected DOI matches the current one — already correct");
+      toast("Detected DOI matches the current one — already correct", "info");
       return;
     }
     /* The Rust reassign command currently only takes a DOI; arXiv routing is
@@ -100,14 +100,15 @@
     if (detectResult.doi) {
       try {
         await reassignWithDoi(citekey, detectResult.doi);
-        toast.info(`Reassigned ${citekey} → ${detectResult.doi}`);
+        toast(`Reassigned ${citekey} → ${detectResult.doi}`, "info");
         closeReidentify();
       } catch (e) {
-        toast.error(String(e));
+        toast(String(e), "error");
       }
     } else if (detectResult.arxivId) {
-      toast.info(
+      toast(
         `Found arXiv id ${detectResult.arxivId} — reassignment by arXiv id is not yet wired (only DOI). Use Manual BibTeX or do a CrossRef search.`,
+        "info",
       );
     }
   }
@@ -138,8 +139,8 @@
    * subprocess keeps running on the Rust side (and CrossRef finishes) but
    * its result is discarded. */
   let candidates = $state<CrossrefCandidate[]>([]);
-  let searching = $derived(activeSearchToken !== null);
   let activeSearchToken = $state<number | null>(null);
+  let searching = $derived(activeSearchToken !== null);
   let searchToken = 0;
   let searchError = $state<string | null>(null);
   let busyReassigning = $state(false);
@@ -189,10 +190,10 @@
     busyReassigning = true;
     try {
       await reassignWithDoi(citekey, doi);
-      toast.info(`Reassigned ${citekey} → ${doi}`);
+      toast(`Reassigned ${citekey} → ${doi}`, "info");
       closeReidentify();
     } catch (e) {
-      toast.error(String(e));
+      toast(String(e), "error");
     } finally {
       busyReassigning = false;
     }
@@ -254,7 +255,7 @@
         const ctx = cnv.getContext("2d");
         if (!ctx) return;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        await page.render({ canvas: cnv, canvasContext: ctx, viewport }).promise;
+        await page.render({ canvasContext: ctx, viewport }).promise;
         if (myToken !== renderToken) return;
         /* Text layer — invisible overlay of positioned <span>s that lets the
          * user click-and-drag select PDF text and copy it. Same pattern as

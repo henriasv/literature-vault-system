@@ -271,7 +271,7 @@
       await invoke("pick_vault", { path: selected });
       window.location.reload();
     } catch (e) {
-      toast.error(String(e));
+      toast(String(e), "error");
     }
   }
   async function handleNewVault() {
@@ -315,7 +315,7 @@
       await invoke("create_vault", { path: where, pdfsTarget });
       window.location.reload();
     } catch (e) {
-      toast.error(String(e));
+      toast(String(e), "error");
     }
   }
 
