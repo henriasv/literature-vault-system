@@ -92,6 +92,75 @@
   let pdfSrc = $state<string | null>(null);
   let srcError = $state<string | null>(null);
 
+  /* `.ep-host` ref + capture-phase wheel clamp.
+   *
+   * macOS trackpads (and to a lesser extent ⌘+wheel on a mouse)
+   * deliver an unusually large deltaY in the first wheel event of a
+   * pinch gesture — often 30–60 px instead of the 1–3 of follow-up
+   * events. EmbedPDF's wheel handler converts each delta into
+   * `scale *= 1 - deltaY*0.01`, so a single 50-px first frame jumps
+   * the in-flight scale to ~0.5 and the transform's translate
+   * (`pointerLocalY * (1 - scale)`) becomes huge when the cursor is
+   * deep into a long document. The plugin then commits the
+   * accumulated zoom + reverts the transform on gesture end, and
+   * the round-trip looks like a "jump out, then jump back" that the
+   * user sees framing each pinch.
+   *
+   * Fix: intercept wheel events at the .ep-host (capture phase, non-
+   * passive) and, when a ctrl/meta-modified event arrives with
+   * |deltaY| > MAX_DELTA, replay it as a clamped synthetic event.
+   * The plugin's bubble-phase listener on the inner container sees a
+   * sane delta, scales smoothly, and start/end jumps disappear. */
+  let epHost = $state<HTMLDivElement | null>(null);
+
+  $effect(() => {
+    const host = epHost;
+    if (!host) return;
+    const MAX_DELTA = 8;
+    let inDispatch = false;
+
+    function onCaptureWheel(e: WheelEvent) {
+      if (inDispatch) return;
+      if (!e.ctrlKey && !e.metaKey) return;
+      if (Math.abs(e.deltaY) <= MAX_DELTA) return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      const sign = Math.sign(e.deltaY) || 1;
+      const clamped = new WheelEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: window,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        deltaX: 0,
+        deltaY: sign * MAX_DELTA,
+        deltaZ: 0,
+        deltaMode: e.deltaMode,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        screenX: e.screenX,
+        screenY: e.screenY,
+      });
+      inDispatch = true;
+      try {
+        (e.target as EventTarget | null)?.dispatchEvent(clamped);
+      } finally {
+        inDispatch = false;
+      }
+    }
+
+    host.addEventListener("wheel", onCaptureWheel, {
+      capture: true,
+      passive: false,
+    });
+    return () => {
+      host.removeEventListener("wheel", onCaptureWheel, { capture: true });
+    };
+  });
+
   /* Resolve citekey → asset:// URL the engine can fetch. */
   $effect(() => {
     const ck = citekey;
@@ -183,7 +252,7 @@
   }
 </script>
 
-<div class="ep-host">
+<div class="ep-host" bind:this={epHost}>
   {#if pdfEngine.error}
     <div class="banner err">PDF engine failed: {pdfEngine.error.message}</div>
   {:else if srcError}
