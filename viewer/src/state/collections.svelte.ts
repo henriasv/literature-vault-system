@@ -93,9 +93,19 @@ export function collectionsBySlug(): Map<string, Collection> {
   return new Map(collectionsState.list.map((c) => [c.slug, c]));
 }
 
-/** Set of citekeys that belong to the given collection (just its own
- *  members, not transitively under children). */
+/** Set of citekeys that belong to the given collection — including
+ *  every paper in any descendant collection. The inheritance is
+ *  view-only: this function unions members across the subtree but
+ *  does not modify the underlying index.md files. Descendants are
+ *  identified by slug prefix: a collection with slug `parent/child`
+ *  is a descendant of `parent`. */
 export function membersOf(slug: string): Set<string> {
-  const c = collectionsState.list.find((c) => c.slug === slug);
-  return new Set(c?.papers ?? []);
+  const out = new Set<string>();
+  const prefix = slug + "/";
+  for (const c of collectionsState.list) {
+    if (c.slug === slug || c.slug.startsWith(prefix)) {
+      for (const p of c.papers) out.add(p);
+    }
+  }
+  return out;
 }

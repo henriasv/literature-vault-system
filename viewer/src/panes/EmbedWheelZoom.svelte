@@ -72,13 +72,10 @@
 
 <style>
   .wheel-zoom-host {
-    /* Pass-through container — the Viewport / Scroller inside fills
-       100% of available space (flex child of .doc-area), so we just
-       need to occupy the same slot. */
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    min-width: 0;
-    flex-direction: column;
+    /* Layout-invisible — the Viewport behaves exactly as if we
+       weren't here, but wheel events still bubble through us in the
+       DOM, so the listener catches them. Plain wrapper divs broke
+       the parent's flex sizing and the PDF render. */
+    display: contents;
   }
 </style>

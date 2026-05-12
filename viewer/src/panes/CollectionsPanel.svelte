@@ -28,6 +28,7 @@
     createCollection,
     deleteCollection,
     renameCollection,
+    membersOf,
   } from "../state/collections.svelte";
   import {
     libraryState,
@@ -943,7 +944,7 @@
     {#snippet TreeNode(node: TreeNode, depth: number)}
       {@const isOpen = expanded.has(node.slug)}
       {@const isActive = libraryState.selectedCollection === node.slug}
-      {@const memberCount = node.collection?.papers.length ?? 0}
+      {@const memberCount = node.collection ? membersOf(node.collection.slug).size : 0}
       <!-- The data-drop-target-slug attribute opts this node into the
            Tauri-routed drop handler in App.svelte. The HTML5 ondragover
            / ondrop handlers are kept as a fallback for runtimes where

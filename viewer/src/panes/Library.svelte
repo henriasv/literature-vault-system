@@ -14,6 +14,7 @@
   import {
     collectionsState,
     addPaperToCollection,
+    membersOf,
   } from "../state/collections.svelte";
   import {
     dndState,
@@ -113,7 +114,11 @@
         slug,
         leafName: slug.split("/").pop() ?? slug,
         isCollection: !!c,
-        count: c?.papers.length ?? 0,
+        /* Transitive count: a parent collection's badge sums in every
+         * descendant collection's members (deduplicated). Matches the
+         * filtering rule in library.applyFilter so the badge equals
+         * the number of papers that show up when this row is selected. */
+        count: c ? membersOf(slug).size : 0,
         children: [],
       });
     }
@@ -449,7 +454,7 @@
       <span class="cf-spacer"></span>
       <span class="cf-count mono">
         {libraryState.selectedCollection
-          ? (collectionsState.list.find((c) => c.slug === libraryState.selectedCollection)?.papers.length ?? 0)
+          ? membersOf(libraryState.selectedCollection).size
           : libraryState.papers.length}
       </span>
     </button>
