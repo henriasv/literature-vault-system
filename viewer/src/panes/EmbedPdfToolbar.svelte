@@ -14,6 +14,7 @@
   import { useScroll } from "@embedpdf/plugin-scroll/svelte";
   import { useSearch } from "@embedpdf/plugin-search/svelte";
   import { useAnnotation } from "@embedpdf/plugin-annotation/svelte";
+  import { PdfAnnotationSubtype, PdfBlendMode } from "@embedpdf/models";
   import { tabsState } from "../state/tabs.svelte";
 
   type Props = { documentId: string };
@@ -68,8 +69,11 @@
     if (!provides) return;
     const off = provides.onAnnotationEvent((evt) => {
       if (evt.type !== "create") return;
-      const ann = evt.annotation as { type?: number } | undefined;
-      if (!ann || ann.type !== 1 /* PdfAnnotationSubtype.TEXT */) return;
+      const ann = evt.annotation as { type?: number; custom?: { bookmark?: boolean } } | undefined;
+      if (!ann || ann.type !== PdfAnnotationSubtype.TEXT) return;
+      /* Don't deactivate when the just-created TEXT is a bookmark
+       * (we never engage a click-to-place tool for bookmarks anyway). */
+      if (ann.custom?.bookmark) return;
       const current = untrack(() => activeToolId);
       if (current !== "textComment") return;
       activeToolId = null;
@@ -77,6 +81,77 @@
     });
     return () => off?.();
   });
+
+  /* ---- Bookmark ---------------------------------------------------------
+   * One bookmark per paper, stored as a TEXT annotation with
+   * `custom.bookmark = true`. Toolbar button creates or moves it to the
+   * current viewport's centre. Jumping back happens via the right-pane
+   * Annotations tab (single-click on the bookmark row), reusing the
+   * existing requestJump pipeline.
+   */
+  type BookmarkAnno = { id: string; pageIndex: number; rect?: { origin: { x: number; y: number }; size: { width: number; height: number } } };
+  /* Reactive lookup of the current bookmark — re-evaluates whenever the
+   * annotation plugin's `selectedUids`/`byUid` proxies tick. `state.byUid`
+   * is the canonical map; pageVisibilityMetrics changes don't matter
+   * here. */
+  const bookmark = $derived.by<BookmarkAnno | null>(() => {
+    void annotation.state.selectedUids; // touch state to track reactivity
+    const provides = annotation.provides;
+    if (!provides) return null;
+    const all = provides.getAnnotations();
+    for (const t of all) {
+      const o = t.object as { id: string; pageIndex: number; custom?: { bookmark?: boolean }; rect?: BookmarkAnno["rect"] };
+      if (o.custom?.bookmark === true) {
+        return { id: o.id, pageIndex: o.pageIndex, rect: o.rect };
+      }
+    }
+    return null;
+  });
+
+  const BOOKMARK_SIZE = 24;
+
+  function setOrMoveBookmark() {
+    const provides = annotation.provides;
+    const sp = scroll.provides;
+    if (!provides || !sp) return;
+    /* Pick the most-visible page and the page-coord midpoint of its
+     * visible window — that's "where I'm currently reading". */
+    const metrics = sp.getMetrics();
+    const current = metrics?.currentPage ?? 1;
+    const pageVis = metrics?.pageVisibilityMetrics?.find((m) => m.pageNumber === current);
+    if (!pageVis) return;
+    const cx = pageVis.original.pageX + pageVis.original.visibleWidth / 2;
+    const cy = pageVis.original.pageY + pageVis.original.visibleHeight / 2;
+    const rect = {
+      origin: { x: cx - BOOKMARK_SIZE / 2, y: cy - BOOKMARK_SIZE / 2 },
+      size: { width: BOOKMARK_SIZE, height: BOOKMARK_SIZE },
+    };
+    /* Always delete-then-create. updateAnnotation's reducer patches the
+     * annotation's fields but keeps it indexed under its original page
+     * in `state.pages`, so a same-page rect change works but a cross-
+     * page move leaves a phantom on the old page and nothing on the
+     * new one. createAnnotation correctly inserts under the new page,
+     * so we just remove and re-insert. */
+    const existing = bookmark;
+    if (existing) {
+      provides.deleteAnnotation(existing.pageIndex, existing.id);
+    }
+    provides.createAnnotation(current - 1, {
+      id: crypto.randomUUID(),
+      pageIndex: current - 1,
+      type: PdfAnnotationSubtype.TEXT,
+      rect,
+      strokeColor: "#7a3a14", // accent
+      color: "#7a3a14",
+      opacity: 1,
+      blendMode: PdfBlendMode.Normal,
+      author: "Literature Vault",
+      created: new Date(),
+      flags: ["print", "noRotate", "noZoom"],
+      contents: "",
+      custom: { bookmark: true },
+    } as Parameters<typeof provides.createAnnotation>[1]);
+  }
 
   const search = useSearch(() => documentId);
 
@@ -165,70 +240,60 @@
     onEnter(true);
   }
 
-  /* When the active match index changes, scroll the page that match is
-   * on into view — without changing zoom. Pick top- or bottom-alignment
-   * based on whether the target is below or above the current page, so
-   * the visual jump is minimised:
-   *   target page > current → bottom-align (target appears from below)
-   *   target page < current → top-align (target appears from above)
-   *   target page == current → no scroll (the in-page highlight is enough)
-   */
-  /* Scroll-to-match policy (per user spec — minimise jank):
-   *   1. Default: top-align the target page (`alignY: 0`). Page top sits
-   *      at the viewport top — predictable, no big visual jump between
-   *      consecutive matches.
-   *   2. Override to bottom-align (`alignY: 100`) ONLY when the match is
-   *      so far down the page that top-aligning would leave it off the
-   *      visible viewport.
+  /* When the active match index changes, ensure the match is in view.
    *
-   * We don't scroll on a per-match basis when the target page is already
-   * current — the SearchLayer in-page highlight is enough; no jump
-   * needed.
+   * Strategy: skip the scroll if the match's rect is already inside the
+   * visible portion of its page (so consecutive matches in view don't
+   * jitter the viewport); otherwise, smoothly scroll to centre the
+   * match by passing its midpoint as `pageCoordinates` with
+   * alignX/Y = 50.
    *
-   * To know whether top-align would hide the match, compare the match's
-   * Y fraction-of-page against the viewport's fraction-of-page. If
-   * matchYFraction > viewportYFraction (i.e., the match starts below
-   * what would be visible at top-align), switch to bottom-align. */
+   * The old "current-page → no scroll" shortcut was wrong when a page
+   * was taller than the viewport — matches on the lower half of the
+   * current page were left off-screen with no scroll fired. The new
+   * visibility check uses pageVisibilityMetrics.original (page-coord
+   * window) directly, so it works regardless of zoom or page count. */
   $effect(() => {
     const idx = search.state.activeResultIndex ?? -1;
     const results = search.state.results;
     if (idx < 0 || !results || !results[idx]) return;
     const result = results[idx];
     const targetPage = (result.pageIndex ?? 0) + 1;
-    const current = untrack(() => scroll.state.currentPage ?? 1);
-    if (targetPage === current) return; // already on this page — SearchLayer's highlight is enough
-
-    // Compute the threshold: how much of the page fits in the viewport?
-    // pageLayout.height and viewport clientHeight are both in CSS px so
-    // their ratio is meaningful. matchY (from result.rects[0].origin.y)
-    // and pageLayout.height share the page's local coordinate space
-    // — both express "where on this page" in the same units that
-    // pdfium reports, so the fraction matchY / pageHeight is what we
-    // want to compare against viewportFraction.
-    let alignY = 0; // default: top-align the page
     const firstRect = result.rects?.[0];
-    const layout = untrack(() => scroll.provides?.getLayout());
-    const pageLayout = layout?.virtualItems
-      .flatMap((vi) => vi.pageLayouts)
-      .find((p) => p.pageNumber === targetPage);
+    if (!firstRect) return;
 
-    if (firstRect && pageLayout && pageLayout.height > 0) {
-      const matchYFraction =
-        (firstRect.origin.y + (firstRect.size?.height ?? 0)) / pageLayout.height;
-      /* Threshold ≈ "how much of the page is visible when top-aligned."
-       * Without a viewport-vs-page ratio we use 0.85 as a safe proxy: if
-       * the match ends in the bottom ~15% of the page, top-aligning is
-       * likely to clip it off, so bottom-align instead. The bottom-15%
-       * threshold is generous enough that consecutive matches in the
-       * same upper-page region don't flip between alignments. */
-      if (matchYFraction > 0.85) {
-        alignY = 100;
-      }
+    const sp = scroll.provides;
+    if (!sp) return;
+
+    /* If the match is already comfortably on-screen, don't move the
+     * viewport. "Comfortably" means inside the *central* 60% of the
+     * visible y-window — a match peeking at the very top or bottom
+     * edge of the viewport (e.g. when only a thin sliver of page N+1
+     * is visible) still triggers a centring scroll, so the user
+     * doesn't have to hunt for it. */
+    const COMFORT_PAD = 0.2; // skip the top/bottom 20% of the visible window
+    const metrics = untrack(() => sp.getMetrics());
+    const pageVis = metrics?.pageVisibilityMetrics?.find(
+      (m) => m.pageNumber === targetPage,
+    );
+    if (pageVis) {
+      const matchTop = firstRect.origin.y;
+      const matchBottom = matchTop + (firstRect.size?.height ?? 0);
+      const visTop = pageVis.original.pageY;
+      const visHeight = pageVis.original.visibleHeight;
+      const comfortTop = visTop + visHeight * COMFORT_PAD;
+      const comfortBottom = visTop + visHeight * (1 - COMFORT_PAD);
+      if (matchTop >= comfortTop && matchBottom <= comfortBottom) return;
     }
 
-    scroll.provides?.scrollToPage({
+    sp.scrollToPage({
       pageNumber: targetPage,
-      alignY,
+      pageCoordinates: {
+        x: firstRect.origin.x + (firstRect.size?.width ?? 0) / 2,
+        y: firstRect.origin.y + (firstRect.size?.height ?? 0) / 2,
+      },
+      alignX: 50,
+      alignY: 50,
       behavior: "smooth",
     });
   });
@@ -346,6 +411,13 @@
     </div>
 
     <div class="right">
+      <button
+        class="btn bookmark"
+        onclick={setOrMoveBookmark}
+        title={bookmark ? "Move the existing bookmark to where you are reading now" : "Mark where you are reading"}
+      >
+        {bookmark ? "MOVE BOOKMARK HERE" : "BOOKMARK"}
+      </button>
       <button
         class="btn annotate-toggle"
         class:active={annotateOpen}
@@ -501,6 +573,9 @@
   .annotate-toggle.active {
     background: var(--ink, #1a1612);
     color: var(--backdrop, #fcfaf5);
+  }
+  .btn.bookmark {
+    color: var(--accent, #7a3a14);
   }
 
   /* Floating annotation bar — overlays the PDF area when toggled on,

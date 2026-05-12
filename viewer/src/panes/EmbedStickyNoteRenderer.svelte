@@ -27,6 +27,7 @@
     strokeColor?: string;
     color?: string;
     opacity?: number;
+    custom?: { bookmark?: boolean; comment?: string };
   };
 
   type Props = {
@@ -51,6 +52,11 @@
 
   const ann = useAnnotationCapability();
 
+  /* A bookmark annotation = TEXT subtype with custom.bookmark = true.
+   * Rendered as a ribbon icon in the accent colour to distinguish it
+   * from yellow sticky notes. Only one bookmark per paper, set/moved
+   * from the toolbar. */
+  const isBookmark = $derived(currentObject.custom?.bookmark === true);
   const color = $derived(currentObject.strokeColor ?? currentObject.color ?? "#FFCD45");
   const opacity = $derived(currentObject.opacity ?? 1);
 
@@ -163,26 +169,47 @@
   onpointercancel={onPointerUp}
   role="button"
   tabindex={onClick ? 0 : -1}
-  aria-label="Sticky note"
+  aria-label={isBookmark ? "Bookmark" : "Sticky note"}
 >
   {#if !appearanceActive}
-    <svg
-      viewBox="0 0 20 20"
-      width="100%"
-      height="100%"
-      style="position: absolute; inset: 0; pointer-events: none;"
-    >
-      <path
-        d="M 0.5 15.5 L 0.5 0.5 L 19.5 0.5 L 19.5 15.5 L 8.5 15.5 L 6.5 19.5 L 4.5 15.5 Z"
-        stroke-width="1"
-        stroke-linejoin="miter"
-        fill={color}
-        {opacity}
-        stroke={lineColor}
-      />
-      <line x1="2.5" y1="4.25" x2="17.5" y2="4.25" stroke-width="1" stroke={lineColor} />
-      <line x1="2.5" y1="8" x2="17.5" y2="8" stroke-width="1" stroke={lineColor} />
-      <line x1="2.5" y1="11.75" x2="17.5" y2="11.75" stroke-width="1" stroke={lineColor} />
-    </svg>
+    {#if isBookmark}
+      <!-- Ribbon-style bookmark icon: a rectangle with a notch cut out
+           of the bottom. Same 20×20 viewBox as the sticky shape so the
+           icon visually matches its rect. -->
+      <svg
+        viewBox="0 0 20 20"
+        width="100%"
+        height="100%"
+        style="position: absolute; inset: 0; pointer-events: none;"
+      >
+        <path
+          d="M 4 1 L 16 1 L 16 18 L 10 14 L 4 18 Z"
+          stroke-width="1"
+          stroke-linejoin="miter"
+          fill={color}
+          {opacity}
+          stroke="#1a1612"
+        />
+      </svg>
+    {:else}
+      <svg
+        viewBox="0 0 20 20"
+        width="100%"
+        height="100%"
+        style="position: absolute; inset: 0; pointer-events: none;"
+      >
+        <path
+          d="M 0.5 15.5 L 0.5 0.5 L 19.5 0.5 L 19.5 15.5 L 8.5 15.5 L 6.5 19.5 L 4.5 15.5 Z"
+          stroke-width="1"
+          stroke-linejoin="miter"
+          fill={color}
+          {opacity}
+          stroke={lineColor}
+        />
+        <line x1="2.5" y1="4.25" x2="17.5" y2="4.25" stroke-width="1" stroke={lineColor} />
+        <line x1="2.5" y1="8" x2="17.5" y2="8" stroke-width="1" stroke={lineColor} />
+        <line x1="2.5" y1="11.75" x2="17.5" y2="11.75" stroke-width="1" stroke={lineColor} />
+      </svg>
+    {/if}
   {/if}
 </div>

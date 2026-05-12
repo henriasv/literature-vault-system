@@ -40,6 +40,13 @@
   const isSticky = $derived(
     context.annotation.object.type === PdfAnnotationSubtype.TEXT,
   );
+  /* Bookmarks are TEXT annotations flagged via `custom.bookmark`. They
+   * don't carry user comments — the menu shows a single "Remove
+   * bookmark" action instead of the comment textarea. */
+  const isBookmark = $derived(
+    isSticky &&
+      (context.annotation.object.custom as { bookmark?: boolean } | undefined)?.bookmark === true,
+  );
   const excerpt = $derived<string>(
     isSticky ? "" : context.annotation.object.contents ?? "",
   );
@@ -158,31 +165,46 @@
       style:z-index="1000"
       style:cursor="default"
     >
-      {#if excerpt}
-        <div class="excerpt" title={excerpt}>“{excerpt}”</div>
+      {#if isBookmark}
+        <div class="bookmark-label">📌 Bookmark</div>
+        <div class="actions">
+          <button
+            type="button"
+            class="del"
+            onclick={remove}
+            title="Remove the bookmark"
+            aria-label="Remove the bookmark"
+          >
+            Remove bookmark
+          </button>
+        </div>
+      {:else}
+        {#if excerpt}
+          <div class="excerpt" title={excerpt}>“{excerpt}”</div>
+        {/if}
+        <textarea
+          class="comment"
+          placeholder={isSticky
+            ? "Write a note…  (Enter to save, Shift+Enter for newline)"
+            : "Add a comment…  (Enter to save, Shift+Enter for newline)"}
+          rows="2"
+          bind:value={draft}
+          bind:this={textareaEl}
+          onblur={commitIfChanged}
+          onkeydown={onKeydown}
+        ></textarea>
+        <div class="actions">
+          <button
+            type="button"
+            class="del"
+            onclick={remove}
+            title={isSticky ? "Delete this sticky note" : "Delete this highlight"}
+            aria-label={isSticky ? "Delete this sticky note" : "Delete this highlight"}
+          >
+            {isSticky ? "Delete note" : "Delete highlight"}
+          </button>
+        </div>
       {/if}
-      <textarea
-        class="comment"
-        placeholder={isSticky
-          ? "Write a note…  (Enter to save, Shift+Enter for newline)"
-          : "Add a comment…  (Enter to save, Shift+Enter for newline)"}
-        rows="2"
-        bind:value={draft}
-        bind:this={textareaEl}
-        onblur={commitIfChanged}
-        onkeydown={onKeydown}
-      ></textarea>
-      <div class="actions">
-        <button
-          type="button"
-          class="del"
-          onclick={remove}
-          title={isSticky ? "Delete this sticky note" : "Delete this highlight"}
-          aria-label={isSticky ? "Delete this sticky note" : "Delete this highlight"}
-        >
-          {isSticky ? "Delete note" : "Delete highlight"}
-        </button>
-      </div>
     </div>
   {/if}
 </span>
@@ -213,6 +235,15 @@
     -webkit-line-clamp: 3;
     line-clamp: 3;
     -webkit-box-orient: vertical;
+  }
+  .bookmark-label {
+    font-family: var(--sans, Inter, system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--accent, #7a3a14);
+    padding: 2px 0;
   }
   .comment {
     appearance: none;

@@ -76,7 +76,7 @@
   interface AnnotationRow {
     id: string;
     pageIndex: number;            // 0-based
-    kind: "highlight" | "sticky" | "other";
+    kind: "bookmark" | "highlight" | "sticky" | "other";
     color: string | null;
     excerpt: string;              // highlight only
     comment: string;              // user note (custom.comment for highlights, contents for stickies)
@@ -117,7 +117,9 @@
             y: rect.origin.y + rect.size.height / 2,
           };
         }
+        const isBookmark = a.type === STICKY_SUBTYPE && a.custom?.bookmark === true;
         const kind: AnnotationRow["kind"] =
+          isBookmark ? "bookmark" :
           a.type === HIGHLIGHT_SUBTYPE ? "highlight" :
           a.type === STICKY_SUBTYPE ? "sticky" : "other";
         const contentsStr = typeof a.contents === "string" ? a.contents : "";
@@ -136,7 +138,13 @@
           center,
         });
       }
-      rows.sort((x, y) => x.pageIndex - y.pageIndex);
+      /* Bookmark always sorts to the top so it's easy to find; then by
+       * page number ascending. */
+      rows.sort((x, y) => {
+        if (x.kind === "bookmark" && y.kind !== "bookmark") return -1;
+        if (y.kind === "bookmark" && x.kind !== "bookmark") return 1;
+        return x.pageIndex - y.pageIndex;
+      });
       annotationRows = rows;
       annotationsLoadError = null;
     } catch (e) {
@@ -764,7 +772,9 @@
               ondblclick={() => onAnnotationRowDblClick(row)}
               title="Click to jump · double-click to open"
             >
-              {#if row.kind === "sticky"}
+              {#if row.kind === "bookmark"}
+                <span class="ann-icon ann-icon-bookmark" aria-hidden="true">▮</span>
+              {:else if row.kind === "sticky"}
                 <span class="ann-icon" aria-hidden="true">●</span>
               {:else}
                 <span
@@ -775,7 +785,9 @@
               {/if}
               <span class="ann-page">p.{row.pageIndex + 1}</span>
               <span class="ann-body">
-                {#if row.kind === "highlight"}
+                {#if row.kind === "bookmark"}
+                  <span class="ann-bookmark-label">Bookmark</span>
+                {:else if row.kind === "highlight"}
                   {#if row.excerpt}
                     <span class="ann-excerpt">“{row.excerpt}”</span>
                   {:else}
@@ -1158,6 +1170,18 @@
     color: #FFCD45;
     font-size: 14px;
     line-height: 1;
+  }
+  .ann-icon-bookmark {
+    color: var(--accent, #7a3a14);
+    font-size: 12px;
+  }
+  .ann-bookmark-label {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--accent, #7a3a14);
   }
   .ann-page {
     font-family: var(--sans);
