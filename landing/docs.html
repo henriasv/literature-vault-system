@@ -113,7 +113,10 @@
   (function () {
     'use strict';
 
-    var DOCS_BASE = '../docs/';
+    // Path to docs/ depends on deploy layout:
+    //  - Local dev served from repo root:  /landing/docs.html → ../docs/
+    //  - GitHub Pages with landing/ at root: /docs.html       → docs/
+    var DOCS_BASE = location.pathname.indexOf('/landing/') !== -1 ? '../docs/' : 'docs/';
     var GITHUB_DOCS_BASE = 'https://github.com/henriasv/literature-vault-system/blob/main/docs/';
     var INDEX_ROUTE = '';
     var INDEX_FILE  = 'README.md';
