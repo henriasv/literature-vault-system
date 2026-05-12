@@ -17,30 +17,45 @@
   import type { MenuWrapperProps } from "@embedpdf/utils/svelte";
   import type { Rect } from "@embedpdf/models";
   import { HIGHLIGHT_COLORS, type HighlightColor } from "../lib/highlight-colors";
+  import { appendHighlight } from "../lib/vault";
+  import { toast } from "../state/toast.svelte";
 
   type Props = {
     documentId: string;
+    citekey: string;
     rect: Rect;
     menuWrapperProps: MenuWrapperProps;
     selected: boolean;
     context: { type: "selection"; pageIndex: number };
   };
-  let { documentId, rect, menuWrapperProps, selected, context }: Props = $props();
+  let { documentId, citekey, rect, menuWrapperProps, selected, context }: Props = $props();
 
   const annotation = useAnnotationCapability();
   const selection = useSelectionCapability();
 
-  function createHighlight(color: HighlightColor) {
+  async function createHighlight(color: HighlightColor) {
     const annProv = annotation.provides;
     const selProv = selection.provides?.forDocument(documentId);
-    console.log("[HighlightMenu] click", { color, hasAnnProv: !!annProv, hasSelProv: !!selProv });
     if (!annProv || !selProv) return;
 
     const pageIndex = context.pageIndex;
     const segmentRects = selProv.getHighlightRectsForPage(pageIndex);
     const bounding = selProv.getBoundingRectForPage(pageIndex);
-    console.log("[HighlightMenu] selection", { pageIndex, segmentCount: segmentRects.length, hasBounding: !!bounding });
     if (segmentRects.length === 0 || !bounding) return;
+
+    // Capture the selected text BEFORE creating the annotation —
+    // getSelectedText is a Task<string[]>, one string per page the
+    // selection spans. We then stash it as the annotation's `contents`
+    // (round-trips into the sidecar + an eventual XFDF export) and
+    // append it to the note's `## Highlights` section as a record the
+    // user can search / cite from.
+    let excerpt = "";
+    try {
+      const parts = await selProv.getSelectedText().toPromise();
+      excerpt = (parts ?? []).join(" ").replace(/\s+/g, " ").trim();
+    } catch (e) {
+      console.warn("[HighlightMenu] failed to read selected text", e);
+    }
 
     annProv.createAnnotation(pageIndex, {
       id: crypto.randomUUID(),
@@ -54,10 +69,23 @@
       blendMode: PdfBlendMode.Multiply,
       author: "Literature Vault",
       created: new Date(),
+      contents: excerpt || undefined,
     });
-    console.log("[HighlightMenu] createAnnotation dispatched");
 
     selProv.clear();
+
+    if (excerpt) {
+      // Fire-and-forget: don't block the UI on the note write. Append
+      // is idempotent-ish (same excerpt twice will produce two lines —
+      // which is what the user would want for actual duplicates). On
+      // failure we surface a toast rather than swallow silently so the
+      // user knows the markdown didn't update; the in-PDF highlight
+      // still persists via the sidecar regardless.
+      void appendHighlight(citekey, pageIndex + 1, excerpt).catch((e) => {
+        console.warn("[HighlightMenu] appendHighlight failed", e);
+        toast(`Highlight saved, but failed to append to note: ${e}`, "error");
+      });
+    }
   }
 </script>
 

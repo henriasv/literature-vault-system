@@ -115,6 +115,72 @@ export async function writeAnnotations(citekey: string, json: string): Promise<v
   await invoke("write_annotations", { citekey, json });
 }
 
+/** Append a highlight excerpt as a bullet under `## Highlights` in the
+ *  paper's note. Creates the section if it doesn't exist. Append-only —
+ *  if the user later deletes the corresponding PDF annotation, the
+ *  markdown entry stays put (the captured quote is the user's curated
+ *  record, not a mirror of the visual highlights).
+ *
+ *  Read-modify-write through the existing note commands; the editor's
+ *  out-of-band-edit banner handles the rare case where the user has the
+ *  same note open with unsaved buffer state. */
+export async function appendHighlight(
+  citekey: string,
+  pageNum: number,
+  excerpt: string,
+): Promise<void> {
+  const cleaned = excerpt.replace(/\s+/g, " ").trim();
+  if (!cleaned) return;
+  const line = `- p.${pageNum} — "${cleaned}"`;
+  const current = await readNote(citekey);
+  const updated = appendBulletToSection(current, "Highlights", line);
+  if (updated === current) return;
+  await writeNote(citekey, updated);
+}
+
+/** Insert `bullet` at the end of the `## {sectionName}` section of
+ *  `note`, creating the section at the end of the file if it's missing.
+ *  Line-based so the section boundaries are unambiguous; preserves a
+ *  single blank line between the section's last bullet and any
+ *  following `## …` section. */
+function appendBulletToSection(
+  note: string,
+  sectionName: string,
+  bullet: string,
+): string {
+  const header = `## ${sectionName}`;
+  const lines = note.split("\n");
+  const headerIdx = lines.findIndex((l) => l.trim() === header);
+
+  if (headerIdx === -1) {
+    // No section yet — append at the end of the note.
+    const trimmed = note.replace(/\n+$/, "");
+    return `${trimmed}\n\n${header}\n\n${bullet}\n`;
+  }
+
+  // End of section = the next `## ` line, or EOF.
+  let endIdx = lines.length;
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    if (lines[i].startsWith("## ")) {
+      endIdx = i;
+      break;
+    }
+  }
+
+  // Last non-blank line within the section.
+  let insertAfter = headerIdx;
+  for (let i = headerIdx + 1; i < endIdx; i++) {
+    if (lines[i].trim() !== "") insertAfter = i;
+  }
+
+  const before = lines.slice(0, insertAfter + 1);
+  const after = lines.slice(endIdx);
+  // Empty section ⇒ add the blank-line spacer between header and first bullet.
+  const body = insertAfter === headerIdx ? ["", bullet] : [bullet];
+  const tail = after.length > 0 ? ["", ...after] : [""];
+  return [...before, ...body, ...tail].join("\n");
+}
+
 export async function dropToInbox(pdfPaths: string[]): Promise<string[]> {
   return await invoke<string[]>("drop_to_inbox", { pdfPaths });
 }
