@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Literature Vault — a reference manager system for the BibTeX + Markdown workflow</title>
+  <meta name="description" content="Literature Vault is a small, opinionated reference manager system. Two surfaces share one folder on disk: the Viewer (macOS) for deep reading and note-writing, and the Librarian (Telegram bot, via nanoclaw) for phone-based intake and chat follow-up. BibTeX out, plain .md notes." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <span class="masthead">
+        <span class="caps">No. 001 ·</span>
+        <span class="masthead-title">Literature Vault</span>
+      </span>
+      <nav class="topnav">
+        <a href="#features">Features</a>
+        <a href="#agent">Librarian agent</a>
+        <a href="#install">Install</a>
+        <a href="./docs.html">Docs →</a>
+        <a class="ghost" href="https://github.com/henriasv/literature-vault-system">GitHub →</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HERO — two surfaces, side by side -->
+    <section class="hero hero-app" aria-label="Literature Vault — Viewer and Librarian, side by side">
+      <div class="hero-twin">
+      <div class="appshell" role="img" aria-label="A stylized rendering of the Literature Vault Viewer: three panes (library, PDF, notes) with traffic-light window controls and a paper tab. The marketing copy is set inside the panes.">
+
+        <!-- top chrome -->
+        <div class="ash-topbar">
+          <div class="ash-traffic">
+            <span class="tl tl-close"></span>
+            <span class="tl tl-min"></span>
+            <span class="tl tl-zoom"></span>
+          </div>
+          <div class="ash-modetabs">
+            <span class="mt active">READING</span>
+            <span class="mt">ORGANIZING</span>
+          </div>
+          <div class="ash-tabstrip">
+            <span class="paper-tab active">
+              <span class="pt-title">Sveinsson 2026</span>
+              <span class="pt-x">×</span>
+            </span>
+            <span class="paper-tab-add">+</span>
+          </div>
+          <div class="ash-pdfctrls">
+            <span class="pc-btn">‹ PREV</span>
+            <span class="pc-page">1 <span class="pc-slash">/</span> 7</span>
+            <span class="pc-btn">NEXT ›</span>
+            <span class="pc-sep"></span>
+            <span class="pc-btn">FIT</span>
+            <span class="pc-btn">−</span>
+            <span class="pc-btn">+</span>
+            <span class="pc-sep"></span>
+            <span class="pc-btn pc-find">FIND <span class="pc-kbd">⌘F</span></span>
+          </div>
+        </div>
+
+        <!-- three panes -->
+        <div class="ash-panes">
+
+          <!-- LEFT PANE: masthead + CTAs + library list -->
+          <aside class="ash-pane ash-lib">
+            <p class="caps ash-eyebrow">THE VAULT &middot; NO. 001</p>
+            <h1 class="ash-masthead">
+              Literature<br />
+              <em>collected.</em>
+            </h1>
+
+            <p class="ash-lede">
+              A small, opinionated reference manager system for researchers in LaTeX,
+              Typst, or Pandoc. Two surfaces share one folder: the <strong>Viewer</strong>
+              on macOS, and the <strong>Librarian</strong> on Telegram (a
+              <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a> bot).
+              PDFs on disk, Markdown notes, BibTeX out.
+            </p>
+
+            <div class="ash-cta-row">
+              <a class="cta primary" href="https://github.com/henriasv/literature-vault-system">Get it on GitHub</a>
+              <a class="cta ghost" href="#features">See the features</a>
+            </div>
+
+            <div class="ash-searchbar">
+              <span class="ash-search-icon" aria-hidden="true">⌕</span>
+              <span class="ash-search-placeholder">Search the collection…</span>
+              <span class="ash-sem">SEM <span class="ash-toggle"><span class="ash-toggle-dot"></span></span></span>
+            </div>
+
+            <div class="ash-tagrow">
+              <span class="caps">Tags</span>
+              <span class="ash-tag">friction</span>
+              <span class="ash-tag">fracture</span>
+              <span class="ash-tag">chemfrac</span>
+            </div>
+
+            <div class="ash-filterrow">
+              <span class="caps">›&nbsp;In all papers</span>
+              <span class="ash-count">7</span>
+            </div>
+
+            <div class="ash-sortrow">
+              <span class="caps">Sorted&nbsp;·&nbsp;Added ↓</span>
+              <span class="caps ash-copybib">Copy bib</span>
+            </div>
+
+            <ol class="ash-liblist">
+              <li class="active">
+                <div class="ll-row">
+                  <span class="ll-author">Sveinsson</span>
+                  <span class="ll-year">2026</span>
+                  <span class="ll-age">just now</span>
+                </div>
+                <p class="ll-title">Literature Vault: a reference manager system for the BibTeX + Markdown workflow</p>
+                <p class="ll-journal">Editorial Library</p>
+              </li>
+              <li>
+                <div class="ll-row">
+                  <span class="ll-author">Trømborg</span>
+                  <span class="ll-year">2011</span>
+                  <span class="ll-age">42 min ago</span>
+                </div>
+                <p class="ll-title">Transition from static to kinetic friction: insights from a 2D model</p>
+                <p class="ll-journal">Physical Review Letters</p>
+              </li>
+              <li>
+                <div class="ll-row">
+                  <span class="ll-author">Rubinstein</span>
+                  <span class="ll-year">2004</span>
+                  <span class="ll-age">3 h ago</span>
+                </div>
+                <p class="ll-title">Detachment fronts and the onset of dynamic friction</p>
+                <p class="ll-journal">Nature</p>
+              </li>
+              <li>
+                <div class="ll-row">
+                  <span class="ll-author">Ruina</span>
+                  <span class="ll-year">1983</span>
+                  <span class="ll-age">1 d ago</span>
+                </div>
+                <p class="ll-title">Slip instability and state variable friction laws</p>
+                <p class="ll-journal">Journal of Geophysical Research</p>
+              </li>
+              <li class="dim">
+                <div class="ll-row">
+                  <span class="ll-author">Dieterich</span>
+                  <span class="ll-year">1979</span>
+                  <span class="ll-age">3 d ago</span>
+                </div>
+                <p class="ll-title">Modeling of rock friction: 1. Experimental results and constitutive equations</p>
+                <p class="ll-journal">Journal of Geophysical Research</p>
+              </li>
+            </ol>
+          </aside>
+
+          <!-- MIDDLE PANE: PDF preview (= the landing's abstract) -->
+          <main class="ash-pane ash-pdf">
+            <div class="ash-findbar">Find in PDF…</div>
+
+            <article class="ash-paper">
+              <p class="ash-paper-hdr">
+                <strong>EDITORIAL LIBRARY</strong>
+                <span class="ash-paper-sep">|</span>
+                <span class="ash-paper-kind">No. 001 · Product note</span>
+              </p>
+
+              <p class="caps ash-paper-area">Software · Workflow</p>
+
+              <h2 class="ash-paper-title">
+                Literature Vault: a reference manager system for the BibTeX + Markdown workflow
+              </h2>
+
+              <p class="ash-paper-authors">
+                Henrik Sveinsson<sup>1</sup>*
+              </p>
+
+              <p class="ash-paper-abstract">
+                <span class="ash-dropcap">L</span>iterature Vault is a small, opinionated
+                reference manager system for researchers who write in LaTeX, Typst, or
+                Pandoc. Two surfaces share one folder on disk: the <em>Viewer</em> on
+                macOS for deep reading and note-writing, and the <em>Librarian</em> — a
+                Telegram bot running on nanoclaw — for phone-based intake and
+                conversational library follow-up. PDFs on disk, one Markdown note per
+                paper, BibTeX out; the contract between surfaces is the filesystem, and
+                nothing else. The vault is independent of either tool.
+              </p>
+
+              <p class="caps ash-col-hdr ash-section-tease">Introduction</p>
+
+              <p class="ash-paper-fold">⋯</p>
+            </article>
+          </main>
+
+          <!-- RIGHT PANE: a notes editor; metadata is compact, the body is the point -->
+          <aside class="ash-pane ash-notes ash-notes--big">
+            <div class="ash-note-meta-compact">
+              <p class="caps ash-eyebrow">
+                <span class="ash-path-segment">PaperNotes</span>
+                <span class="ash-path-sep">/</span>
+                <span class="ash-path-file">sveinsson2026-litvault.md</span>
+              </p>
+
+              <h3 class="ash-note-title ash-note-title--small">
+                Literature Vault: a reference manager system…
+              </h3>
+
+              <p class="ash-note-meta ash-note-meta--small">
+                <em>Sveinsson, H.</em> &middot;
+                <em>Editorial Library</em> &middot; 2026
+                <span class="ash-tag-mini">bibtex</span>
+                <span class="ash-tag-mini">markdown</span>
+                <span class="ash-tag-mini">viewer</span>
+              </p>
+
+              <div class="ash-rendered-row ash-rendered-row--small">
+                <span class="rr-tab active">EDIT</span>
+                <span class="rr-tab">PREVIEW</span>
+              </div>
+            </div>
+
+            <pre class="ash-note-raw ash-note-raw--big"><code><span class="md-h1"># Literature Vault</span>
+
+<span class="md-h2">## Vault layout</span>
+
+<span class="vt-root">literature-vault/</span>
+<span class="vt-tree">├── </span><span class="vt-dir">PaperNotes/</span>
+<span class="vt-tree">│   └── </span><span class="vt-file">{citekey}.md</span>
+<span class="vt-tree">├── </span><span class="vt-dir">Bibfiles/</span>
+<span class="vt-tree">│   └── </span><span class="vt-file">{citekey}.bib</span>
+<span class="vt-tree">├── </span><span class="vt-dir">PDFs/</span>
+<span class="vt-tree">│   └── </span><span class="vt-file">{citekey}.pdf</span>
+<span class="vt-tree">├── </span><span class="vt-dir">SI/</span>
+<span class="vt-tree">├── </span><span class="vt-dir">Annotations/</span>
+<span class="vt-tree">├── </span><span class="vt-dir">Inbox/</span>
+<span class="vt-tree">├── </span><span class="vt-dir">Collections/</span>
+<span class="vt-tree">│   └── </span><span class="vt-dir">{slug}/</span>
+<span class="vt-tree">│       └── </span><span class="vt-file">index.md</span>
+<span class="vt-tree">├── </span><span class="vt-dir">Projects/</span>
+<span class="vt-tree">├── </span><span class="vt-file">index.json</span>
+<span class="vt-tree">├── </span><span class="vt-file">library.bib</span>
+<span class="vt-tree">└── </span><span class="vt-file">embeddings.db</span>
+
+<span class="typewriter" aria-label="The user is appending notes below the vault layout"></span></code></pre>
+          </aside>
+
+        </div>
+      </div>
+      <!-- end appshell -->
+
+      <!-- phone preview: the Librarian on Telegram, rotating through 3 mock exchanges -->
+      <div class="phoneshell" role="img" aria-label="A stylized phone screen showing the Librarian Telegram bot, rotating through three example exchanges: intake with project context, library queries by chat, and conversational status follow-up.">
+        <div class="phone-frame">
+          <div class="phone-notch" aria-hidden="true"></div>
+          <div class="phone-screen">
+            <div class="phone-slides">
+
+              <!-- SLIDE A — intake with project context -->
+              <div class="phone-slide phone-slide--a">
+                <aside class="tg-frame tg-frame--phone" aria-label="Slide A: intake with project context">
+                  <div class="tg-header">
+                    <span class="tg-back" aria-hidden="true">‹</span>
+                    <span class="tg-avatar">L</span>
+                    <span class="tg-title">
+                      <span class="tg-name">Librarian</span>
+                      <span class="tg-sub">bot</span>
+                    </span>
+                  </div>
+                  <div class="tg-day">today</div>
+                  <div class="tg-chat">
+
+                    <div class="tg-bubble out">
+                      I got this paper from my colleague. I think it'll be useful for my fracture instabilities project.
+                      <span class="tg-time">10:53 <span class="tg-check">✓✓</span></span>
+                    </div>
+
+                    <div class="tg-bubble out tg-attach">
+                      <span class="tg-att-icon">⬇</span>
+                      <span class="tg-att-meta">
+                        <span class="tg-att-name">livne_2008_lefm.pdf</span>
+                        <span class="tg-att-sub">4.2 MB · Download</span>
+                      </span>
+                      <span class="tg-time tg-time-att">10:53 <span class="tg-check">✓✓</span></span>
+                    </div>
+
+                    <div class="tg-bubble in">
+                      On it, filing now.
+                      <span class="tg-time">10:53</span>
+                    </div>
+
+                    <div class="tg-bubble in tg-long">
+                      Filed as <span class="mono">livne2008-prl-physrevlett-101-264301</span> — Livne, Bouchbinder &amp; Fineberg, <strong>Breakdown of linear elastic fracture mechanics at the tip of a rapid crack</strong>, PRL 2008.<br /><br />
+                      Added to <span class="mono">Collections/fracture-instabilities</span>.
+                      <span class="tg-time">10:54</span>
+                    </div>
+
+                  </div>
+                </aside>
+              </div>
+
+              <!-- SLIDE B — library query by chat -->
+              <div class="phone-slide phone-slide--b">
+                <aside class="tg-frame tg-frame--phone" aria-label="Slide B: library query by chat">
+                  <div class="tg-header">
+                    <span class="tg-back" aria-hidden="true">‹</span>
+                    <span class="tg-avatar">L</span>
+                    <span class="tg-title">
+                      <span class="tg-name">Librarian</span>
+                      <span class="tg-sub">bot</span>
+                    </span>
+                  </div>
+                  <div class="tg-day">today</div>
+                  <div class="tg-chat">
+
+                    <div class="tg-bubble out">
+                      Send me my papers on detachment fronts.
+                      <span class="tg-time">14:02 <span class="tg-check">✓✓</span></span>
+                    </div>
+
+                    <div class="tg-bubble in tg-long">
+                      Four matches in your library:<br /><br />
+                      • <span class="mono">trømborg2011-prl-…</span> — 2D spring–block model<br />
+                      • <span class="mono">rubinstein2004-nature-…</span> — first experimental observation<br />
+                      • <span class="mono">bouchbinder2011-prl-…</span> — continuum-fracture theory<br />
+                      • <span class="mono">svetlizky2017-nature-…</span> — supershear precursors
+                      <span class="tg-time">14:02</span>
+                    </div>
+
+                    <div class="tg-bubble out">
+                      Just the Svetlizky abstract.
+                      <span class="tg-time">14:03 <span class="tg-check">✓✓</span></span>
+                    </div>
+
+                    <div class="tg-bubble in tg-long">
+                      <em>Supershear precursors precede macroscopic stick–slip transitions in dry frictional interfaces. Their propagation velocity exceeds the bulk Rayleigh wave speed by ~30%, consistent with…</em>
+                      <span class="tg-time">14:03</span>
+                    </div>
+
+                  </div>
+                </aside>
+              </div>
+
+              <!-- SLIDE C — conversational follow-up: adding reading context -->
+              <div class="phone-slide phone-slide--c">
+                <aside class="tg-frame tg-frame--phone" aria-label="Slide C: adding reading context to a filed paper">
+                  <div class="tg-header">
+                    <span class="tg-back" aria-hidden="true">‹</span>
+                    <span class="tg-avatar">L</span>
+                    <span class="tg-title">
+                      <span class="tg-name">Librarian</span>
+                      <span class="tg-sub">bot</span>
+                    </span>
+                  </div>
+                  <div class="tg-day">today</div>
+                  <div class="tg-chat">
+
+                    <div class="tg-bubble in tg-long">
+                      Filed <span class="mono">livne2008-prl-physrevlett-101-264301</span>. Anything to add to <span class="mono">## Why</span>?
+                      <span class="tg-time">10:55</span>
+                    </div>
+
+                    <div class="tg-bubble out tg-long">
+                      Bouchbinder cites this in §4 of his 2014 review as the cleanest evidence for LEFM breakdown at fast cracks. Relevant for the chemfrac framing.
+                      <span class="tg-time">10:56 <span class="tg-check">✓✓</span></span>
+                    </div>
+
+                    <div class="tg-bubble in">
+                      Appended to <span class="mono">## Why</span>.
+                      <span class="tg-time">10:56</span>
+                    </div>
+
+                    <div class="tg-bubble out tg-long">
+                      Also: fig.&nbsp;4 — σ²(v) deviates from LEFM above v ≈ 0.4 c_R.
+                      <span class="tg-time">10:57 <span class="tg-check">✓✓</span></span>
+                    </div>
+
+                    <div class="tg-bubble in">
+                      Appended to <span class="mono">## Notes</span>.
+                      <span class="tg-time">10:57</span>
+                    </div>
+
+                  </div>
+                </aside>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- rotating caption + dot indicator -->
+        <div class="phone-caption" aria-hidden="true">
+          <div class="phone-caption-stack">
+            <span class="phone-caption-text phone-caption-text--a">Intake from your phone</span>
+            <span class="phone-caption-text phone-caption-text--b">Library queries by chat</span>
+            <span class="phone-caption-text phone-caption-text--c">Reading context as you go</span>
+          </div>
+          <div class="phone-dots" role="tablist" aria-label="Choose Librarian example">
+            <button type="button" class="dot dot--a" data-slide="0" role="tab" aria-label="Show example 1: intake from your phone"></button>
+            <button type="button" class="dot dot--b" data-slide="1" role="tab" aria-label="Show example 2: library queries by chat"></button>
+            <button type="button" class="dot dot--c" data-slide="2" role="tab" aria-label="Show example 3: conversational follow-up"></button>
+          </div>
+        </div>
+      </div>
+      <!-- end phoneshell -->
+
+      </div>
+      <!-- end hero-twin -->
+
+      <p class="appshell-cap">The Viewer · macOS, Tauri 2 + Svelte 5   ·   The Librarian · Telegram, via nanoclaw</p>
+    </section>
+
+    <!-- POSITIONING -->
+    <section class="band positioning">
+      <div class="cols">
+        <div class="col">
+          <p class="caps">Who it's for</p>
+          <p class="body">
+            Researchers who write in LaTeX, Typst, or Pandoc and want their reading
+            material as plain files on disk. If your paper-writing flow already starts
+            with <span class="mono">\cite&#123;…&#125;</span>, the system is aimed at
+            this workflow — opinionated about format, deliberately small in scope, and
+            structured so the files are independent of either tool.
+          </p>
+        </div>
+        <div class="col">
+          <p class="caps">Two surfaces, one vault</p>
+          <p class="body">
+            <strong>The Viewer</strong> (macOS app) is for deep reading and
+            note-writing — library list, PDF, Markdown notes side-by-side, semantic
+            search.<br />
+            <strong>The Librarian</strong> (Telegram bot, via
+            <span class="mono">nanoclaw</span>) is for phone-based intake and
+            chat-based library follow-up.<br />
+            They share one folder on disk and nothing else. Swap either piece without
+            breaking the other.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SYSTEM DIAGRAM -->
+    <section class="band system">
+      <p class="caps section-eyebrow">No. 002 · The system</p>
+      <h2>Three pieces, one folder.</h2>
+
+      <div class="sys-diagram">
+
+        <figure class="sys-node">
+          <p class="caps">Viewer</p>
+          <div class="sys-mini viewer-mini" aria-hidden="true">
+            <span class="vm-pane vm-lib"></span>
+            <span class="vm-pane vm-pdf"><span class="vm-pdf-label">PDF</span></span>
+            <span class="vm-pane vm-note"></span>
+          </div>
+          <p class="sys-role">reads, edits notes</p>
+        </figure>
+
+        <div class="sys-conn">
+          <div class="sys-flow">
+            <p class="sys-flow-label">drop PDF · save note</p>
+            <p class="sys-flow-arrow forward">⟶</p>
+          </div>
+          <div class="sys-flow reverse">
+            <p class="sys-flow-arrow back">⟵</p>
+            <p class="sys-flow-label">reads PDFs, notes, BibTeX</p>
+          </div>
+        </div>
+
+        <figure class="sys-node sys-vault-node">
+          <p class="caps">Vault</p>
+          <pre class="sys-tree"><code>PDFs/
+PaperNotes/
+Bibfiles/
+SI/
+Annotations/
+Inbox/
+library.bib
+index.json
+embeddings.db</code></pre>
+          <p class="sys-role">a folder on disk</p>
+        </figure>
+
+        <div class="sys-conn">
+          <div class="sys-flow">
+            <p class="sys-flow-label">files PDFs, writes BibTeX</p>
+            <p class="sys-flow-arrow back">⟵</p>
+          </div>
+          <div class="sys-flow reverse">
+            <p class="sys-flow-arrow forward">⟶</p>
+            <p class="sys-flow-label">picks up <span class="mono">Inbox/</span></p>
+          </div>
+        </div>
+
+        <figure class="sys-node">
+          <p class="caps">Librarian</p>
+          <div class="sys-mini agent-mini" aria-hidden="true">
+            <span class="am-row"><span class="am-dot">›</span> chat on Telegram</span>
+            <span class="am-row"><span class="am-dot">›</span> phone intake</span>
+            <span class="am-row"><span class="am-dot">›</span> citekey · BibTeX · dedup</span>
+            <span class="am-row"><span class="am-dot">›</span> conversational follow-up</span>
+          </div>
+          <p class="sys-role">Telegram bot · <span class="mono">nanoclaw</span></p>
+        </figure>
+
+      </div>
+
+      <p class="body sys-caption">
+        The contract between viewer and agent is the filesystem — nothing else.
+        Either piece can be swapped without breaking the other; the vault is
+        independent of either tool.
+      </p>
+    </section>
+
+    <!-- INSTALL -->
+    <section id="install" class="band install">
+      <p class="caps section-eyebrow">No. 003 · Install</p>
+      <h2>Six commands, in order.</h2>
+      <p class="body install-intro">
+        Apple Silicon Mac. The first script that takes
+        <span class="mono">--vault</span> stores it in a gitignored
+        <span class="mono">setup/.local.conf</span>; the rest default to it.
+        Steps 5 and 6 are optional.
+      </p>
+
+      <ol class="install-flow">
+
+        <li>
+          <p class="install-flow-title">Prerequisites — Xcode CLI tools, Homebrew, Rust, Node, uv.</p>
+<pre class="install-block"><code>xcode-select --install
+brew install rustup-init node uv
+rustup-init -y</code></pre>
+        </li>
+
+        <li>
+          <p class="install-flow-title">Clone the repo and build the Viewer.</p>
+<pre class="install-block"><code>git clone https://github.com/henriasv/literature-vault-system
+cd literature-vault-system
+
+./setup/install-viewer.sh</code></pre>
+          <p class="fineprint">
+            Installs <span class="mono">Literature Vault.app</span> into
+            <span class="mono">/Applications/</span>. The Rust compile takes a
+            few minutes the first time.
+          </p>
+        </li>
+
+        <li>
+          <p class="install-flow-title">Scaffold a vault.</p>
+<pre class="install-block"><code>./setup/init-vault.sh ~/literature-vault
+
+# already have papers + notes? add --adopt:
+./setup/init-vault.sh ~/existing-collection --adopt</code></pre>
+        </li>
+
+        <li>
+          <p class="install-flow-title">Point the Viewer at it.</p>
+<pre class="install-block"><code>./setup/configure-viewer.sh</code></pre>
+        </li>
+
+        <li>
+          <p class="install-flow-title">
+            Embed server <span class="install-opt">— optional</span>
+            <br />Always-on semantic search via launchd.
+          </p>
+          <p class="body install-step-prose">
+            Default model is
+            <span class="mono">nvidia/llama-embed-nemotron-8b</span>
+            (4096-dim, ~14&nbsp;GB). Run from inside the vault so the path
+            resolves correctly.
+          </p>
+<pre class="install-block"><code>cd ~/literature-vault
+
+# Authenticate (the Nemotron repo is gated):
+uv run --with huggingface_hub huggingface-cli login
+
+# Download into .embedding_models/&lt;dir-name-in-embed_models.json&gt;/:
+uv run --with huggingface_hub python3 -c '
+from huggingface_hub import snapshot_download
+snapshot_download(
+    repo_id="nvidia/llama-embed-nemotron-8b",
+    local_dir=".embedding_models/llama-embed-nemotron-8b")'
+
+# Index the corpus + launch the server:
+uv run scripts/embed_corpus.py
+./setup/install-embed-server.sh</code></pre>
+          <p class="fineprint">
+            Lighter alternative: <span class="mono">google/embeddinggemma-300m</span>
+            (768-dim, ~1.2&nbsp;GB) — flip <span class="mono">default</span>
+            in <span class="mono">scripts/embed_models.json</span> if you
+            install it instead.
+          </p>
+        </li>
+
+        <li>
+          <p class="install-flow-title">
+            Librarian agent <span class="install-opt">— optional</span>
+            <br />Telegram intake via
+            <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a>.
+          </p>
+
+          <p class="body install-step-prose">
+            <strong>First, on the nanoclaw side:</strong>
+          </p>
+          <ol class="install-substeps">
+            <li>
+              Clone and install <span class="mono">nanoclaw</span> per its
+              own README (Docker + an Anthropic API key are the main
+              prerequisites).
+            </li>
+            <li>
+              Run nanoclaw's onboarding flow to pair a Telegram bot.
+              You'll need a bot token from
+              <a href="https://t.me/BotFather">@BotFather</a>; nanoclaw
+              walks you through the pairing.
+            </li>
+            <li>
+              Confirm nanoclaw is healthy — DM the bot once and verify
+              you get a reply.
+            </li>
+          </ol>
+
+          <p class="body install-step-prose">
+            <strong>Then, back in this repo:</strong>
+          </p>
+<pre class="install-block"><code>./setup/install-agent.sh --nanoclaw ~/repos/nanoclaw</code></pre>
+          <p class="body install-step-prose">
+            This creates a new group at
+            <span class="mono">~/repos/nanoclaw/groups/librarian/</span>
+            with a rendered <span class="mono">container.json</span>
+            (vault + system mounts) and the agent's
+            <span class="mono">CLAUDE.local.md</span>; it also patches
+            nanoclaw's mount allowlist. Start the group through
+            nanoclaw's usual workflow.
+          </p>
+          <p class="fineprint">
+            First run inside the container bootstraps
+            <span class="mono">uv</span> + Python into
+            <span class="mono">vault/.bin/</span> — ~30&nbsp;s, looks like
+            a hang but isn't.
+          </p>
+        </li>
+
+      </ol>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="band features">
+      <p class="caps section-eyebrow">No. 004 · The Viewer · on your Mac</p>
+      <h2>Built for reading and noting.</h2>
+
+      <div class="grid">
+
+        <article class="card">
+          <p class="caps">Drop &amp; file</p>
+          <h3>Drag in a PDF; the viewer files it.</h3>
+          <p>
+            Drop PDFs on the window (or <span class="mono">⌘N</span>) and the Viewer
+            files them directly — DOI extracted, citekey minted, note skeleton
+            written, <span class="mono">library.bib</span> updated. No external
+            agent in the loop.
+          </p>
+        </article>
+
+        <article class="card">
+          <p class="caps">Three-pane reader</p>
+          <h3>Library, PDF, notes — one window.</h3>
+          <p>
+            Library list on the left, PDF in the middle, Markdown note on the right.
+            Open multiple papers in tabs. Page, zoom, and scroll position persist per
+            tab across launches.
+          </p>
+        </article>
+
+        <article class="card">
+          <p class="caps">Markdown notes</p>
+          <h3>Rendered article or raw editor.</h3>
+          <p>
+            Toggle between a typeset rendered view and CodeMirror 6. <span class="mono">⌘⇧N</span>
+            appends a timestamped section so a reading session leaves a dated trail in
+            the note.
+          </p>
+        </article>
+
+        <article class="card">
+          <p class="caps">Semantic search</p>
+          <h3>Query the whole collection by meaning.</h3>
+          <p>
+            Flip the <span class="mono">SEM</span> switch in the search bar to query
+            <span class="mono">embeddings.db</span> through your embed server. Falls back
+            quietly when the server is unreachable.
+          </p>
+        </article>
+
+        <article class="card">
+          <p class="caps">Tags &amp; manuscripts</p>
+          <h3>Manuscripts as a live view of their sources.</h3>
+          <p>
+            Per-paper tag pills with autocomplete from the whole library.
+            <span class="mono">cite:*</span> tags surface as a <strong>Manuscripts</strong>
+            sidebar section, so a manuscript becomes a live view of its sources.
+          </p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- OBSIDIAN -->
+    <section id="obsidian" class="band split">
+      <div class="split-text">
+        <p class="caps">No. 005 · Plays well with Obsidian</p>
+        <h2>Plain Markdown, end to end.</h2>
+        <p class="body">
+          Every paper's note is a plain <span class="mono">.md</span> file with a fixed
+          YAML frontmatter — <span class="mono">citekey</span>, <span class="mono">title</span>,
+          <span class="mono">authors</span>, <span class="mono">doi</span>,
+          <span class="mono">tags</span>, an <span class="mono">abstract</span> block, and your body text.
+          Open the same folder in Obsidian and everything works: backlinks, graph view,
+          tag panes. The viewer reads what's on disk; no lock-in.
+        </p>
+        <p class="body">
+          The viewer preserves byte-for-byte everything outside the YAML block and body,
+          so co-editing the same notes from Obsidian or your terminal editor is safe.
+        </p>
+      </div>
+      <aside class="codeblock">
+<pre><code>~/literature-vault/
+├── PaperNotes/{citekey}.md     <span class="dim"># one note per paper</span>
+├── PDFs/{citekey}.pdf          <span class="dim"># the actual papers</span>
+├── Bibfiles/{citekey}.bib      <span class="dim"># bibtex (agent-owned)</span>
+├── SI/{citekey}-SI.pdf         <span class="dim"># supplementary info</span>
+├── Annotations/{citekey}.json  <span class="dim"># viewer highlights (viewer-owned)</span>
+├── Inbox/                      <span class="dim"># drop zone</span>
+├── index.json                  <span class="dim"># dedup (agent-owned)</span>
+├── library.bib                 <span class="dim"># combined bib (agent-owned)</span>
+└── embeddings.db               <span class="dim"># sqlite-vec (agent-owned)</span></code></pre>
+      </aside>
+    </section>
+
+    <!-- LIBRARIAN: deep dive -->
+    <section id="agent" class="band librarian-deep">
+      <p class="caps section-eyebrow">No. 006 · The Librarian · deep dive</p>
+      <h2>Intake, follow-up, and chat queries.</h2>
+
+      <div class="lib-grid">
+        <article class="lib-card">
+          <p class="caps">Phone intake</p>
+          <p class="body">
+            Send a PDF or arXiv link from anywhere; metadata extracted, citekey minted,
+            BibTeX written, dedup checked, note scaffolded.
+          </p>
+        </article>
+        <article class="lib-card">
+          <p class="caps">Reading context as you go</p>
+          <p class="body">
+            Reply to the bot with why a paper made it into your library — what your
+            colleague said about it, a figure you want to remember, how it connects
+            to something you're reading. It gets appended to the note's
+            <span class="mono">## Why</span> or <span class="mono">## Notes</span>
+            section.
+          </p>
+        </article>
+        <article class="lib-card">
+          <p class="caps">Library queries by chat</p>
+          <p class="body">
+            <em>"My papers on rate-and-state friction"</em> →
+            <span class="mono">find_similar.py</span> over
+            <span class="mono">embeddings.db</span> → citekeys back, ranked. Useful
+            when you're away from your laptop.
+          </p>
+        </article>
+        <article class="lib-card">
+          <p class="caps">Scheduled jobs</p>
+          <p class="body">
+            Weekly reading digests, dedup audits, embedding refresh — recurring tasks
+            run by the nanoclaw container. Each agent group has its own
+            <span class="mono">CLAUDE.local.md</span> with your conventions.
+          </p>
+        </article>
+      </div>
+
+      <p class="body librarian-foot">
+        The Librarian runs as a <a href="https://github.com/henriasv/nanoclaw"><span class="mono">nanoclaw</span></a>
+        agent bound to a Telegram channel (Discord, Slack, iMessage, WhatsApp, … all
+        supported by nanoclaw if you'd rather not use Telegram). The contract between
+        Viewer and Librarian is the filesystem, not an API; any agent that produces
+        files in the vault layout will work.
+      </p>
+    </section>
+
+    <!-- DOCS CTA -->
+    <section class="band docs-cta">
+      <p class="caps section-eyebrow">More</p>
+      <h2>Want the technical spec?</h2>
+      <p class="body docs-cta-prose">
+        The on-disk layout, citekey algorithm, note frontmatter, collections
+        format, intake pipeline, and the viewer's stack all live on a separate
+        page so this one stays light.
+      </p>
+      <p class="docs-cta-link">
+        <a class="cta primary" href="./docs.html">Read the docs →</a>
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="caps">Literature Vault · No. 001</span>
+      <nav>
+        <a href="https://github.com/henriasv/literature-vault-system">Source</a>
+        <a href="https://github.com/henriasv/literature-vault-system/issues">Issues</a>
+        <a href="https://github.com/henriasv/literature-vault-system/blob/main/README.md">README</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    // Phone carousel: click a dot to jump to that slide and pause auto-rotation.
+    (function () {
+      document.querySelectorAll('.phoneshell').forEach(function (shell) {
+        var slides   = shell.querySelectorAll('.phone-slide');
+        var captions = shell.querySelectorAll('.phone-caption-text');
+        var dots     = shell.querySelectorAll('.dot');
+        dots.forEach(function (dot, i) {
+          dot.addEventListener('click', function () {
+            shell.classList.add('paused');
+            function set(group) {
+              group.forEach(function (el, j) {
+                el.classList.toggle('active', j === i);
+              });
+            }
+            set(slides); set(captions); set(dots);
+          });
+        });
+      });
+    })();
+
+    // Notes typewriter: types a markdown note into the right pane, then restarts.
+    (function () {
+      var el = document.querySelector('.ash-note-raw .typewriter');
+      if (!el) return;
+
+      var note = [
+        '## Notes',
+        '',
+        'Two surfaces share this folder:',
+        'the Viewer (Mac) for reading, the',
+        'Librarian (Telegram) for phone-',
+        'based intake and chat follow-up.',
+        'The contract is the filesystem —',
+        'nothing else.',
+        '',
+        'Cite from LaTeX:',
+        '\\cite{sveinsson2026-litvault}',
+      ].join('\n');
+
+      var reduced = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduced) {
+        el.textContent = note;
+        return;
+      }
+
+      var i = 0;
+      function tick() {
+        if (i > note.length) {
+          // hold the finished note for a beat, then restart
+          setTimeout(function () { i = 0; el.textContent = ''; tick(); }, 6000);
+          return;
+        }
+        el.textContent = note.slice(0, i);
+        var ch = note.charAt(i - 1);
+        i += 1;
+        // pacing — slightly humanised typing rhythm
+        var d = 22 + Math.random() * 28;
+        if (ch === ' ') d = 18;
+        if (ch === '\n') d = 110;
+        if (ch === '.' || ch === ',' || ch === ':') d = 220;
+        setTimeout(tick, d);
+      }
+
+      // Start when the pane scrolls into view (it's at the top, so usually immediately).
+      var started = false;
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting && !started) {
+            started = true;
+            tick();
+            obs.disconnect();
+          }
+        });
+      }, { threshold: 0.2 });
+      obs.observe(el);
+    })();
+  </script>
+
+</body>
+</html>

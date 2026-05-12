@@ -27,6 +27,10 @@ signed `.dmg` yet — you build from source.
 
 ## Quick start
 
+Prerequisites: Apple Silicon Mac + Homebrew, with `brew install rustup-init node uv`
+and Xcode Command Line Tools. See [GETTING_STARTED.md](GETTING_STARTED.md) §
+*Prerequisites* for the full list.
+
 ```bash
 git clone https://github.com/<you>/literature-vault-system ~/repos/literature-vault-system
 cd ~/repos/literature-vault-system
@@ -34,15 +38,22 @@ cd ~/repos/literature-vault-system
 # 1. Build & install the viewer (.app → /Applications)
 ./setup/install-viewer.sh
 
-# 2. Scaffold a fresh vault
+# 2. Scaffold a fresh vault (path is remembered in setup/.local.conf)
 ./setup/init-vault.sh ~/literature-vault
 
 # 3. Point the viewer at it
-./setup/configure-viewer.sh --vault ~/literature-vault
+./setup/configure-viewer.sh
 
-# 4. (Optional) install the librarian agent into your existing nanoclaw
-./setup/install-agent.sh --vault ~/literature-vault --nanoclaw ~/repos/nanoclaw
+# 4. (Optional) launchd-supervise the embedding server
+./setup/install-embed-server.sh
+
+# 5. (Optional) install the librarian agent into your existing nanoclaw
+./setup/install-agent.sh --nanoclaw ~/repos/nanoclaw
 ```
+
+After step 2, the vault path is stored in `setup/.local.conf` (gitignored)
+and steps 3–5 default to it. Pass `--vault <path>` to any script if you
+want to override.
 
 See [GETTING_STARTED.md](GETTING_STARTED.md) for the unhurried version
 with prerequisites and troubleshooting.
@@ -54,7 +65,8 @@ viewer/      Tauri + Svelte desktop app (the reader)
 scripts/    Deterministic Python pipeline (filing, citekey scheme, …)
 agent/      Nanoclaw group template (CLAUDE.local.md + container.json)
 docs/       DESIGN.md (vault layout), CITATION_KEYS.md (key algorithm)
-setup/      install-viewer.sh, init-vault.sh, install-agent.sh, …
+setup/      install-viewer.sh, init-vault.sh, configure-viewer.sh,
+            install-agent.sh, install-embed-server.sh, _lib.sh, launchd/
 ```
 
 ## What's NOT in this repo

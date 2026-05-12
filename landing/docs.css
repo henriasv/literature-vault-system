@@ -1,0 +1,305 @@
+/*
+ * Documentation page for Literature Vault.
+ * Loads after style.css so the design tokens (--accent, --ink, --serif, …)
+ * are already defined. Layout-only; no token redefinitions.
+ */
+
+body.docs-page {
+  background: var(--backdrop);
+  color: var(--ink);
+}
+
+/* --- top bar -------------------------------------------------------------- */
+
+.docs-topbar {
+  border-bottom: 1px solid var(--ink-12);
+  background: var(--backdrop);
+}
+.docs-topbar-inner {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0.95rem var(--gutter);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.docs-topbar .masthead-eyebrow {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+}
+.docs-topbar .masthead-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-left: 0.5rem;
+}
+.docs-topnav {
+  display: flex;
+  gap: 1.4rem;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+}
+.docs-topnav a {
+  color: var(--ink-70);
+}
+.docs-topnav a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+.docs-topnav a.home::before {
+  content: "← ";
+  color: var(--ink-50);
+}
+
+/* --- shell: TOC + main --------------------------------------------------- */
+
+.docs-shell {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 2.5rem var(--gutter) 4rem;
+  display: grid;
+  grid-template-columns: 14rem 1fr;
+  gap: 3rem;
+}
+
+@media (max-width: 880px) {
+  .docs-shell {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* --- TOC ----------------------------------------------------------------- */
+
+.docs-toc {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+}
+@media (max-width: 880px) {
+  .docs-toc { position: static; }
+}
+.docs-toc-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+  margin: 0 0 0.75rem;
+}
+.docs-toc ol {
+  list-style: none;
+  counter-reset: toc;
+  padding: 0;
+  margin: 0;
+}
+.docs-toc li {
+  counter-increment: toc;
+  margin: 0.45rem 0;
+  padding-left: 1.6rem;
+  position: relative;
+  line-height: 1.4;
+}
+.docs-toc li::before {
+  content: counter(toc, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--ink-30);
+}
+.docs-toc a {
+  color: var(--ink-70);
+}
+.docs-toc a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* --- main content -------------------------------------------------------- */
+
+.docs-main {
+  min-width: 0; /* allow code blocks to overflow horizontally */
+}
+
+.docs-main h1 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 2.2rem;
+  line-height: 1.15;
+  margin: 0 0 0.4rem;
+  color: var(--ink);
+}
+.docs-main .docs-subtitle {
+  font-family: var(--serif);
+  color: var(--ink-70);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  max-width: 40em;
+  margin: 0 0 2.5rem;
+}
+
+.docs-main h2 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  margin: 3rem 0 0.4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--ink-12);
+  scroll-margin-top: 1rem;
+  color: var(--ink);
+}
+.docs-main h2:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.docs-main h2 .h2-num {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--ink-30);
+  margin-right: 0.7rem;
+  vertical-align: 0.15em;
+}
+
+.docs-main h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  margin: 1.7rem 0 0.5rem;
+  color: var(--ink);
+}
+
+.docs-main p,
+.docs-main ul,
+.docs-main ol {
+  font-family: var(--serif);
+  font-size: 1.0rem;
+  line-height: 1.65;
+  max-width: 38em;
+}
+.docs-main p {
+  margin: 0 0 0.95rem;
+}
+.docs-main ul,
+.docs-main ol {
+  padding-left: 1.4rem;
+  margin: 0 0 1rem;
+}
+.docs-main li { margin-bottom: 0.3rem; }
+
+.docs-main a {
+  color: var(--accent);
+}
+
+.docs-main strong { font-weight: 700; }
+.docs-main em { font-style: italic; }
+
+/* inline code */
+.docs-main p code,
+.docs-main li code,
+.docs-main h3 code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 0.05em 0.32em;
+  border-radius: 2px;
+}
+
+/* block code */
+.docs-main pre {
+  background: var(--panel);
+  border: 1px solid var(--ink-12);
+  border-radius: 4px;
+  padding: 0.95rem 1.1rem;
+  margin: 0.8rem 0 1.4rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  max-width: 48em;
+  color: var(--ink);
+}
+.docs-main pre code {
+  font-family: var(--mono);
+  font-size: inherit;
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+.docs-main pre .dim {
+  color: var(--ink-50);
+}
+
+/* aside / note callout */
+.docs-note {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  padding: 0.7rem 1rem;
+  margin: 1rem 0 1.4rem;
+  max-width: 38em;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.docs-note p:last-child { margin-bottom: 0; }
+
+/* the citekey examples table */
+.docs-table {
+  margin: 0.6rem 0 1.4rem;
+  max-width: 48em;
+  border: 1px solid var(--ink-12);
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+.docs-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  border-top: 1px solid var(--ink-12);
+}
+.docs-table-row:first-child { border-top: none; }
+.docs-table-row > span {
+  padding: 0.5rem 0.85rem;
+  overflow-wrap: anywhere;
+}
+.docs-table-row > span + span {
+  border-left: 1px solid var(--ink-12);
+}
+.docs-table-head {
+  background: var(--panel-alt);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+}
+
+/* small footer */
+.docs-foot {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1.5rem var(--gutter) 2.5rem;
+  border-top: 1px solid var(--ink-12);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--ink-50);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.docs-foot nav { display: flex; gap: 1.3rem; }
+.docs-foot a { color: var(--ink-70); }
+.docs-foot a:hover { color: var(--accent); text-decoration: none; }

@@ -6,7 +6,7 @@
 #   ./setup/install-agent.sh \
 #     --vault     ~/literature-vault \
 #     --nanoclaw  ~/repos/nanoclaw \
-#     [--system   $SCRIPT_PARENT]  \
+#     [--system   <path>]          \  # defaults to this repo (the parent of setup/)
 #     [--group    librarian]       \
 #     [--pdfs     /Volumes/CloudPDFs]
 #
@@ -19,6 +19,8 @@
 set -euo pipefail
 
 SYSTEM_DEFAULT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SYSTEM_DEFAULT/setup/_lib.sh"
+conf_load
 
 VAULT_DIR=""
 NANOCLAW_DIR=""
@@ -41,8 +43,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -z "$VAULT_DIR"    ]] && { echo "error: --vault is required" >&2; exit 2; }
-[[ -z "$NANOCLAW_DIR" ]] && { echo "error: --nanoclaw is required" >&2; exit 2; }
+VAULT_DIR="${VAULT_DIR:-$CONF_VAULT}"
+NANOCLAW_DIR="${NANOCLAW_DIR:-$CONF_NANOCLAW}"
+PDFS_DIR="${PDFS_DIR:-$CONF_PDFS}"
+
+[[ -z "$VAULT_DIR"    ]] && { echo "error: --vault is required (and no vault in setup/.local.conf yet)" >&2; exit 2; }
+[[ -z "$NANOCLAW_DIR" ]] && { echo "error: --nanoclaw is required (and no nanoclaw in setup/.local.conf yet)" >&2; exit 2; }
 
 # Normalise paths (expand ~, resolve).
 expand() {
@@ -142,6 +148,10 @@ if pdfs:
 with open(path, "w") as f: json.dump(cfg, f, indent=2)
 print(f"  patched {path}: {len(cfg['allowedRoots'])} allowed roots")
 PY
+
+conf_set vault    "$VAULT_DIR"
+conf_set nanoclaw "$NANOCLAW_DIR"
+conf_set pdfs     "$PDFS_DIR"
 
 echo ""
 echo "Done. The agent is registered as nanoclaw group: $GROUP_NAME"

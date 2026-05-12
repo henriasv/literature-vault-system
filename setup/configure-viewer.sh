@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # Point the installed viewer at a vault directory without launching the app.
-# Writes ~/Library/Application Support/com.literature-vault-viewer/active-vault.json
-# (the same file the viewer's File > Open Vault menu writes).
+# Writes ~/Library/Application Support/literature-vault/settings.json
+# with {"activeVault": "<path>"} — the same file the viewer's
+# File > Open Vault menu writes (see viewer/src-tauri/src/settings.rs).
 #
 #   ./setup/configure-viewer.sh --vault ~/literature-vault
 #
 # Equivalent to launching the app and using its first-run picker.
 
 set -euo pipefail
+
+SYSTEM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SYSTEM_DIR/setup/_lib.sh"
+conf_load
 
 VAULT_DIR=""
 while [[ $# -gt 0 ]]; do
@@ -21,8 +26,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+VAULT_DIR="${VAULT_DIR:-$CONF_VAULT}"
 if [[ -z "$VAULT_DIR" ]]; then
-  echo "error: --vault is required" >&2
+  echo "error: --vault is required (no vault in setup/.local.conf yet)" >&2
   exit 2
 fi
 
@@ -38,15 +44,18 @@ if [[ ! -d "$VAULT_DIR/PaperNotes" ]]; then
   exit 1
 fi
 
-# The viewer reads its active vault from Tauri's app-data dir on macOS.
-# The bundle identifier from tauri.conf.json determines the directory name.
-SETTINGS_DIR="$HOME/Library/Application Support/com.literature-vault-viewer"
+# The viewer (settings.rs) loads from dirs::config_dir()/literature-vault/
+# — NOT Tauri's per-identifier app_data_dir. Keep this path in sync with
+# DIR_NAME in viewer/src-tauri/src/settings.rs.
+SETTINGS_DIR="$HOME/Library/Application Support/literature-vault"
 mkdir -p "$SETTINGS_DIR"
 cat > "$SETTINGS_DIR/settings.json" <<JSON
 {
-  "active_vault": "$VAULT_DIR"
+  "activeVault": "$VAULT_DIR"
 }
 JSON
+
+conf_set vault "$VAULT_DIR"
 
 echo "Configured viewer to use vault: $VAULT_DIR"
 echo "Settings file: $SETTINGS_DIR/settings.json"

@@ -56,8 +56,8 @@ def _ensure_server_up() -> None:
     if _in_container():
         raise SystemExit(
             f"embed-server not responding at {_base_url()}.\n"
-            "Run on the host: `uv run scripts/embed_server.py`, or bootstrap "
-            "the launchd plist (launchd/com.henriasv.literature-embed.plist)."
+            "Run on the host: `uv run scripts/embed_server.py`, or install "
+            "the launchd agent (setup/install-embed-server.sh --vault <path>)."
         )
     _start_host_server()
     # Wait up to TIMEOUT_FIRST_CALL for the server to come online.

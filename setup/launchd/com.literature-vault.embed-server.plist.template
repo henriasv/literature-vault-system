@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.literature-vault.embed-server</string>
+
+    <!-- Always-running supervisor. Server itself is small (~50MB) and
+         lazy-loads models only on first request. Models unload at 30 min
+         idle (per-model TTL); the whole process exits at 30 min full idle
+         and launchd restarts it on the next request. -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{UV_PATH}}</string>
+        <string>run</string>
+        <string>{{VAULT_PATH}}/scripts/embed_server.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{VAULT_PATH}}</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{VAULT_PATH}}/embed-server.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{VAULT_PATH}}/embed-server.log</string>
+</dict>
+</plist>

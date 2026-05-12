@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "viewer",
+  "productName": "Literature Vault",
   "version": "0.1.0",
-  "identifier": "com.henriasv.literaturevault",
+  "identifier": "com.literature-vault.viewer",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

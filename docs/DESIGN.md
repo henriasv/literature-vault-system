@@ -28,7 +28,7 @@ Feature requests (not yet designed):
 
 | Thing | Path |
 |---|---|
-| Vault (this repo) | `~/repos/librarian_assistant_vault/` |
+| Vault (this repo) | `~/repos/literature-vault/` |
 | nanoclaw fork | `~/repos/nanoclaw/` |
 | Agent's instructions | `~/repos/nanoclaw/groups/dm-with-henrik/CLAUDE.local.md` (the sibling `CLAUDE.md` is auto-composed from nanoclaw fragments — never edit) |
 | Per-group case context | `~/repos/nanoclaw/groups/dm-with-henrik/projects.md` |
@@ -53,7 +53,7 @@ If you're touching X, look here:
 | Change the note skeleton (frontmatter, sections) | `scripts/file_paper.py:make_note_skeleton`. Update §Conventions in this doc. Backfill old notes if needed. |
 | Change abstract extraction | `scripts/file_paper.py:extract_abstract_from_pdf` |
 | Add or swap an embedding model | `scripts/embed_models.json` (registry). See "How to extend" below. |
-| Tune embedding-server lifecycle | `launchd/com.henriasv.literature-embed.plist` + `scripts/embed_server.py` (idle TTL constants near top) |
+| Tune embedding-server lifecycle | `launchd/com.literature-vault.embed-server.plist` + `scripts/embed_server.py` (idle TTL constants near top) |
 | Change Obsidian view of papers | `Bases/papers.base`, `Bases/collections.base` |
 | Add a new project/topic collection | New view in `Bases/collections.base` filtering by tag |
 | Change agent triggers / replies | `nanoclaw/groups/dm-with-henrik/CLAUDE.local.md` (only) |
@@ -81,10 +81,10 @@ If you're touching X, look here:
 │                                                       │                  │
 │  embed-server (launchd-managed, KeepAlive=true) ◄────┘                  │
 │   127.0.0.1:5817                                      via                │
-│   loads models from vault/Models/                     host.docker.internal│
+│   loads models from vault/.embedding_models/          host.docker.internal│
 │   per-model idle TTL                                                     │
 │                                                                          │
-│  vault/Models/  vault/PaperNotes/  vault/Bibfiles/  vault/PDFs/ →Drive   │
+│  vault/.embedding_models/  vault/PaperNotes/  vault/Bibfiles/  vault/PDFs/ →Drive │
 │  vault/embeddings.db (sqlite-vec, gitignored, regenerable)               │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -100,15 +100,23 @@ Important asymmetry: the **agent runs in the container** (Linux ARM64, no system
 PaperNotes/{citekey}.md       literature note (frontmatter + sections)
 Bibfiles/{citekey}.bib        BibTeX, one per paper
 PDFs/{citekey}.pdf            on Google Drive (symlinked)
+SI/{citekey}-SI.pdf           supplementary information PDFs (see SI surfacing note below)
+Annotations/{citekey}.json    viewer highlights/annotations (EmbedPDF sidecar JSON, one per paper)
 Inbox/                        incoming PDFs; filed (moved to PDFs/) as soon as bib info is resolved
 Projects/                     curated topic notes (you-authored)
 Collections/{name}.md         user-curated paper groupings (frontmatter + ## Papers list)
 Bases/                        Obsidian Bases (later)
-scripts/                      Python helpers (uv + PEP 723); also CITATION_KEYS.md spec
+scripts/                      symlink → literature-vault-system/scripts (Python helpers, uv + PEP 723)
 index.json                    dedup index (by sha256 / DOI / arXiv)
 library.bib                   auto-aggregated from Bibfiles/*.bib
 embeddings.db                 sqlite-vec, gitignored, regenerable
+.embedding_models/{name}/     machine-local model cache; gitignored; regenerable from HuggingFace
 ```
+
+**SI surfacing — TBD**: convention is one SI PDF per paper at `SI/{citekey}-SI.pdf`.
+The agent already moves SI files there with the citekey prefix. How the viewer
+surfaces them (sidebar badge? toggle in the PDF pane? separate tab opened from
+the paper note?) is still an open design question.
 
 `.gitignore`: `PDFs`, `Inbox/`, `embeddings.db`, `.bin/`, `.uv-cache/`, `.uv-pythons/`, `.DS_Store`, `__pycache__/`.
 
@@ -234,8 +242,8 @@ Anything that's a pure function of inputs lives in `scripts/`, not in the agent'
 | `append_note.py` | ✅ done | Append `### {ISO timestamp}\n{body}` under the `## Notes` section of `PaperNotes/{citekey}.md`. Input: `--citekey` + body via stdin or `--body`. |
 | `embed_corpus.py` | ✅ done | (Re)build `embeddings.db` from PaperNotes (title + abstract + `## Why` + `## Cleaned Notes`). Incremental via content-hash. Talks to `embed_server.py`. Auto-migrates `vec_papers` when `MODEL_NAME` changes. |
 | `find_similar.py` | ✅ done | Text query → top-N `{citekey, distance}` via `embeddings.db`. Talks to `embed_server.py`. |
-| `embed_server.py` | ✅ done | Long-running embed server on host. **Multi-model**: reads `scripts/embed_models.json` for the registry + default; lazy-loads each model on first request; per-model idle TTL so cold models unload while hot ones stay warm. HTTP on 127.0.0.1:5817. Process exits when nothing has been used for 30 min. Started by launchd socket activation (`launchd/com.henriasv.literature-embed.plist`); agent in container reaches it via `host.docker.internal:5817`. |
-| `embed_models.json` | ✅ done | Model registry. `default` is what the agent uses when no model is requested. Add a model: drop weights in `Models/<dir>/`, append a registry entry, optionally flip `default`. |
+| `embed_server.py` | ✅ done | Long-running embed server on host. **Multi-model**: reads `scripts/embed_models.json` for the registry + default; lazy-loads each model on first request; per-model idle TTL so cold models unload while hot ones stay warm. HTTP on 127.0.0.1:5817. Process exits when nothing has been used for 30 min. Started by launchd socket activation (`launchd/com.literature-vault.embed-server.plist`); agent in container reaches it via `host.docker.internal:5817`. |
+| `embed_models.json` | ✅ done | Model registry. `default` is what the agent uses when no model is requested. Add a model: drop weights in `.embedding_models/<dir>/`, append a registry entry, optionally flip `default`. |
 | `_embed_client.py` | ✅ done | Thin client. Auto-detects host vs container; fork-starts the server on host if not responding; surfaces server JSON errors verbatim. |
 
 What stays with the agent (genuinely LLM-shaped):
@@ -284,7 +292,7 @@ The `self-mod` nanoclaw module is loaded → the agent self-modifies `CLAUDE.loc
 
 ## Working in this repo
 
-This repo (`librarian_assistant_vault`) is for: scripts, notes, the index, this design doc, and Obsidian configuration. Not for: agent behavior (separate repo), nanoclaw internals (separate repo), system services.
+This repo (`literature-vault`) is for: scripts, notes, the index, this design doc, and Obsidian configuration. Not for: agent behavior (separate repo), nanoclaw internals (separate repo), system services.
 
 Conventions:
 - Scripts in `scripts/`, PEP 723 headers, runnable both on Mac (host) and inside the container.
@@ -296,44 +304,44 @@ Conventions:
 
 ## First-time setup (fresh machine)
 
-1. Clone this vault into `~/repos/librarian_assistant_vault/` and the nanoclaw fork into `~/repos/nanoclaw/`.
+1. Clone this vault into `~/repos/literature-vault/` and the nanoclaw fork into `~/repos/nanoclaw/`.
 2. Install `uv` on the host (`brew install uv`).
 3. Bootstrap the embed-server via launchd:
    ```bash
-   ln -s ~/repos/librarian_assistant_vault/launchd/com.henriasv.literature-embed.plist \
-         ~/Library/LaunchAgents/com.henriasv.literature-embed.plist
-   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.henriasv.literature-embed.plist
+   ln -s ~/repos/literature-vault/launchd/com.literature-vault.embed-server.plist \
+         ~/Library/LaunchAgents/com.literature-vault.embed-server.plist
+   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.literature-vault.embed-server.plist
    curl http://127.0.0.1:5817/health   # should return JSON
    ```
-4. Download embedding models. The default model is set in `scripts/embed_models.json`. Each registered model needs weights at `Models/<dir>/`. E.g.:
+4. Download embedding models. The default model is set in `scripts/embed_models.json`. Each registered model needs weights at `.embedding_models/<dir>/`. E.g.:
    ```bash
    uv run --with huggingface_hub python3 -c '
    from huggingface_hub import snapshot_download
    snapshot_download(repo_id="google/embeddinggemma-300m",
-                     local_dir="Models/embeddinggemma-300m")'
+                     local_dir=".embedding_models/embeddinggemma-300m")'
    ```
    For gated repos: `huggingface-cli login` first.
 5. Embed the corpus: `uv run scripts/embed_corpus.py` (uses default model from the JSON).
 6. Sanity check: `uv run scripts/find_similar.py "your test query" --top 3`.
-7. Open the vault in Obsidian (`File → Open vault → ~/repos/librarian_assistant_vault`). Bases views appear under `Bases/`.
+7. Open the vault in Obsidian (`File → Open vault → ~/repos/literature-vault`). Bases views appear under `Bases/`.
 
 The container (Telegram side) takes care of itself — nanoclaw spawns it on the next message, and `vault/.bin/` already has the Linux-ARM uv.
 
 ## How to extend
 
 **Add a new embedding model**
-1. Download weights to `Models/<short-id>/` (or whatever path you like under the vault).
+1. Download weights to `.embedding_models/<short-id>/` (or whatever path you like under the vault).
 2. Append an entry to `scripts/embed_models.json`:
    ```json
    "<short-id>": {
-     "path": "Models/<short-id>",
+     "path": ".embedding_models/<short-id>",
      "dim": <embedding dim from config.json:hidden_size or model card>,
      "doc_prompt": "document",   // or omit if model has no prompts
      "query_prompt": "query",
      "trust_remote_code": true   // only if the repo ships custom modeling code
    }
    ```
-3. `launchctl kickstart -k gui/$(id -u)/com.henriasv.literature-embed` to pick up the new config.
+3. `launchctl kickstart -k gui/$(id -u)/com.literature-vault.embed-server` to pick up the new config.
 4. `uv run scripts/embed_corpus.py --model <short-id>` to populate `vec_papers__<safe_id>`.
 5. Optional: flip `default` in `embed_models.json` if this should be the new default.
 
@@ -352,7 +360,7 @@ Edit `~/repos/nanoclaw/groups/dm-with-henrik/CLAUDE.local.md`. The next containe
 
 ```bash
 # Restart embed-server (after embed_server.py or embed_models.json changes)
-launchctl kickstart -k gui/$(id -u)/com.henriasv.literature-embed
+launchctl kickstart -k gui/$(id -u)/com.literature-vault.embed-server
 tail -f embed-server.log
 
 # Restart nanoclaw orchestrator (after mount/source changes)
@@ -382,5 +390,5 @@ curl http://127.0.0.1:5817/health
 ## Open decisions
 
 - Auto-push from agent: agent auto-commits to the vault; pushes are still gated to Henrik (no OneCLI git creds wired yet).
-- ~~Embedding model: Voyage API vs local sentence-transformers~~ → resolved: sentence-transformers, multi-model registry in `scripts/embed_models.json`. Default = `nemotron-8b` (4096-dim, ~14 GB), with `gemma` (768-dim, ~1.2 GB) as a faster alternative. Models live under `Models/` (gitignored).
+- ~~Embedding model: Voyage API vs local sentence-transformers~~ → resolved: sentence-transformers, multi-model registry in `scripts/embed_models.json`. Default = `nemotron-8b` (4096-dim, ~14 GB), with `gemma` (768-dim, ~1.2 GB) as a faster alternative. Models live under `.embedding_models/` (gitignored).
 - Sync to other machines: not needed yet (single machine).
