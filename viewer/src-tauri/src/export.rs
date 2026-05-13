@@ -14,6 +14,12 @@ pub struct ExportResult {
     pub output: String,
     pub annotations: u32,
     #[serde(default)]
+    pub mode: String,
+    #[serde(default)]
+    pub cover_pages: u32,
+    #[serde(default)]
+    pub annotated_pages: u32,
+    #[serde(default)]
     pub appendix_pages: u32,
 }
 
@@ -21,12 +27,15 @@ pub struct ExportResult {
 /// viewer's "Export PDF" button opens a save-file dialog and the user
 /// picks a destination, that path is passed through; for scripted /
 /// agent runs (no `out`) the script falls back to its default
-/// (`PDFs/annotation_outputs/{citekey}_annotated.pdf`). Returns the
-/// absolute output path so the caller can surface it in the UI.
+/// (`PDFs/annotation_outputs/{citekey}_annotated.pdf`). `mode` picks
+/// the layout — "appendix" (default) or "margin"; see the script's
+/// --mode docs for details. Returns the absolute output path so the
+/// caller can surface it in the UI.
 #[tauri::command]
 pub async fn export_annotated_pdf(
     citekey: String,
     out: Option<String>,
+    mode: Option<String>,
 ) -> Result<ExportResult, String> {
     if !scripts_dir().join("export_annotated_pdf.py").is_file() {
         return Err("scripts/export_annotated_pdf.py not found in vault".into());
@@ -37,6 +46,10 @@ pub async fn export_annotated_pdf(
         if let Some(path) = out.as_deref() {
             args.push("--out");
             args.push(path);
+        }
+        if let Some(m) = mode.as_deref() {
+            args.push("--mode");
+            args.push(m);
         }
         run_script("export_annotated_pdf.py", &args)
             .map_err(|e| format!("export_annotated_pdf: {e:#}"))

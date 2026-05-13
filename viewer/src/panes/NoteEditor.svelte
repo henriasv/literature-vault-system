@@ -238,9 +238,36 @@
   let exportResult = $state<{ output: string; annotations: number } | null>(null);
   let exportError = $state<string | null>(null);
   let exportDismissTimer: number | null = null;
+  /* Layout dropdown anchored under the Export PDF button. Opens on
+   * click, closes when the user picks a mode (which kicks off the
+   * export) or clicks outside.
+   *   'appendix' — note at front, badges on pages, numbered list at end
+   *   'margin'   — note at front, each page widened with a Word-review-
+   *                style comment column on the right */
+  let exportMenuOpen = $state(false);
+  let exportWrapEl = $state<HTMLDivElement | undefined>();
+  type ExportMode = "appendix" | "margin";
+  $effect(() => {
+    if (!exportMenuOpen) return;
+    function onDocClick(e: MouseEvent) {
+      const wrap = exportWrapEl;
+      if (wrap && e.target instanceof Node && wrap.contains(e.target)) return;
+      exportMenuOpen = false;
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") exportMenuOpen = false;
+    }
+    window.addEventListener("mousedown", onDocClick, { capture: true });
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDocClick, { capture: true });
+      window.removeEventListener("keydown", onKey);
+    };
+  });
 
-  async function exportAnnotatedPdf(): Promise<void> {
+  async function exportAnnotatedPdf(mode: ExportMode): Promise<void> {
     if (exporting) return;
+    exportMenuOpen = false;
     /* Open the system save-file dialog before doing any work. The
      * default path lands in `PDFs/annotation_outputs/` inside the
      * vault — the same place the script defaults to when invoked
@@ -286,7 +313,7 @@
     try {
       const r = await invoke<{ output: string; annotations: number }>(
         "export_annotated_pdf",
-        { citekey, out: chosenPath },
+        { citekey, out: chosenPath, mode },
       );
       exportResult = r;
       /* Auto-dismiss the success banner after 8s. */
@@ -902,12 +929,38 @@
         Annotations{#if annotationRowsNoBookmark.length > 0} <span class="count">{annotationRowsNoBookmark.length}</span>{/if}
       </button>
       <span class="vt-grow"></span>
-      <button
-        class="vt-export"
-        onclick={exportAnnotatedPdf}
-        disabled={exporting}
-        title="Export an annotated PDF with the note + a numbered annotation list as appendix"
-      >{exporting ? "Exporting…" : "Export PDF"}</button>
+      <div class="export-wrap" bind:this={exportWrapEl} class:open={exportMenuOpen}>
+        <button
+          class="vt-export"
+          onclick={() => (exportMenuOpen = !exportMenuOpen)}
+          disabled={exporting}
+          title="Export an annotated PDF — pick a layout"
+          aria-haspopup="menu"
+          aria-expanded={exportMenuOpen}
+        >{exporting ? "Exporting…" : "Export PDF"}<span class="vt-export-caret" aria-hidden="true">▾</span></button>
+        {#if exportMenuOpen}
+          <div class="export-menu" role="menu">
+            <button
+              type="button"
+              role="menuitem"
+              class="export-menu-item"
+              onclick={() => exportAnnotatedPdf("appendix")}
+            >
+              <span class="emi-title">Annotations at end</span>
+              <span class="emi-desc">Note up front, badges on pages, numbered list at the back</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              class="export-menu-item"
+              onclick={() => exportAnnotatedPdf("margin")}
+            >
+              <span class="emi-title">Comments in margin</span>
+              <span class="emi-desc">Each page widened with a Word-review-style comment column</span>
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
     {#if exportResult}
       <div class="export-status">
@@ -1326,8 +1379,73 @@
     gap: 14px;
     padding: 14px 22px 10px;
   }
-  /* Spacer + export button pushed to the right edge of the toggle. */
+  /* Spacer + export split-button pushed to the right edge of the
+     toggle row. The button opens a layout-picker menu underneath it
+     when clicked; selecting a layout starts the export immediately
+     (so two-clicks total: button → option). */
   .vt-grow { flex: 1; }
+  .export-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+  .vt-export-caret {
+    margin-left: 6px;
+    font-size: 9px;
+    opacity: 0.85;
+  }
+  .export-wrap.open .vt-export {
+    background: var(--accent, #7a3a14);
+    color: var(--panel, #fff);
+  }
+  .export-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 30;
+    min-width: 240px;
+    background: var(--panel, #fff);
+    border: 1px solid var(--ink-12, rgba(26, 22, 18, 0.18));
+    border-radius: 4px;
+    box-shadow: 0 4px 12px -4px rgba(26, 22, 18, 0.22);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .export-menu-item {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    padding: 6px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink, #1a1612);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .export-menu-item:hover {
+    background: var(--accent, #7a3a14);
+    color: var(--panel, #fff);
+  }
+  .export-menu-item .emi-title {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .export-menu-item .emi-desc {
+    font-family: var(--serif);
+    font-size: 10.5px;
+    font-style: italic;
+    color: var(--ink-50, rgba(26, 22, 18, 0.6));
+  }
+  .export-menu-item:hover .emi-desc {
+    color: rgba(255, 255, 255, 0.85);
+  }
   .view-toggle .vt-export {
     border: 1px solid var(--accent, #7a3a14);
     color: var(--accent, #7a3a14);
