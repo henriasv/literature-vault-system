@@ -16,6 +16,7 @@
   import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { invoke } from "@tauri-apps/api/core";
+  import { save as saveDialog } from "@tauri-apps/plugin-dialog";
   import { marked } from "marked";
   import { readNote, writeNote, setTags, splitNote, paperLabel, readAnnotations } from "../lib/vault";
   import {
@@ -240,6 +241,36 @@
 
   async function exportAnnotatedPdf(): Promise<void> {
     if (exporting) return;
+    /* Open the system save-file dialog before doing any work. The
+     * default path lands in `PDFs/annotation_outputs/` inside the
+     * vault — the same place the script defaults to when invoked
+     * from the librarian agent / CLI — so users can either keep that
+     * destination with one click or navigate elsewhere (e.g. Desktop
+     * for emailing). */
+    let suggestedPath = `${citekey}_annotated.pdf`;
+    try {
+      const vaultRoot = await invoke<string>("vault_root_path");
+      if (vaultRoot) {
+        suggestedPath = `${vaultRoot}/PDFs/annotation_outputs/${citekey}_annotated.pdf`;
+      }
+    } catch {
+      /* vault_root_path might be unset on first-run setups — keep the
+       * bare filename so the dialog still opens in a sane default
+       * location (the user's home or last-used). */
+    }
+    let chosenPath: string | null;
+    try {
+      chosenPath = await saveDialog({
+        defaultPath: suggestedPath,
+        filters: [{ name: "PDF", extensions: ["pdf"] }],
+        title: "Export annotated PDF",
+      });
+    } catch (e) {
+      exportError = `Couldn't open save dialog: ${e}`;
+      return;
+    }
+    if (!chosenPath) return; // user cancelled
+
     exporting = true;
     exportError = null;
     exportResult = null;
@@ -255,7 +286,7 @@
     try {
       const r = await invoke<{ output: string; annotations: number }>(
         "export_annotated_pdf",
-        { citekey },
+        { citekey, out: chosenPath },
       );
       exportResult = r;
       /* Auto-dismiss the success banner after 8s. */

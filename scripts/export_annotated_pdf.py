@@ -340,7 +340,10 @@ def main() -> None:
     ap.add_argument("--citekey", required=True)
     ap.add_argument(
         "--out",
-        help="Output path (default: PDFs/{citekey}_annotated.pdf)",
+        help="Output path. Default: PDFs/annotation_outputs/{citekey}_annotated.pdf"
+        " — picked so scripted runs (e.g. the librarian agent) end up in a"
+        " predictable subfolder that's easy to ignore from .gitignore / sync"
+        " rules.",
     )
     args = ap.parse_args()
 
@@ -351,7 +354,7 @@ def main() -> None:
     out_path = (
         Path(args.out).expanduser()
         if args.out
-        else VAULT_ROOT / "PDFs" / f"{citekey}_annotated.pdf"
+        else VAULT_ROOT / "PDFs" / "annotation_outputs" / f"{citekey}_annotated.pdf"
     )
 
     if not pdf_path.is_file():

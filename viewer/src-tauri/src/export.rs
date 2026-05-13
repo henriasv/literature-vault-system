@@ -17,17 +17,28 @@ pub struct ExportResult {
     pub appendix_pages: u32,
 }
 
-/// Build `{citekey}_annotated.pdf` next to the original. Returns the
-/// absolute output path the viewer can hand to the OS to preview /
-/// reveal. The script handles everything — we just glue.
+/// Build an annotated PDF for `citekey`. `out` is optional: when the
+/// viewer's "Export PDF" button opens a save-file dialog and the user
+/// picks a destination, that path is passed through; for scripted /
+/// agent runs (no `out`) the script falls back to its default
+/// (`PDFs/annotation_outputs/{citekey}_annotated.pdf`). Returns the
+/// absolute output path so the caller can surface it in the UI.
 #[tauri::command]
-pub async fn export_annotated_pdf(citekey: String) -> Result<ExportResult, String> {
+pub async fn export_annotated_pdf(
+    citekey: String,
+    out: Option<String>,
+) -> Result<ExportResult, String> {
     if !scripts_dir().join("export_annotated_pdf.py").is_file() {
         return Err("scripts/export_annotated_pdf.py not found in vault".into());
     }
     let citekey_owned = citekey.clone();
     let raw = tokio::task::spawn_blocking(move || {
-        run_script("export_annotated_pdf.py", &["--citekey", &citekey_owned])
+        let mut args: Vec<&str> = vec!["--citekey", &citekey_owned];
+        if let Some(path) = out.as_deref() {
+            args.push("--out");
+            args.push(path);
+        }
+        run_script("export_annotated_pdf.py", &args)
             .map_err(|e| format!("export_annotated_pdf: {e:#}"))
     })
     .await
