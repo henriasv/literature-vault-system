@@ -1430,27 +1430,37 @@
      <button>s share a single outer border on the wrap and only show
      a thin internal divider between them. Hover/active states paint
      one half at a time so the user can see which zone is clickable
-     without breaking the single-button silhouette. */
+     without breaking the single-button silhouette.
+     IMPORTANT: do NOT add `overflow: hidden` here — the dropdown menu
+     is `position: absolute; top: calc(100% + 4px)` relative to this
+     wrap, and `overflow: hidden` would clip it to the button's box,
+     hiding the menu entirely (the bug that made the toggle look
+     non-responsive: it opened the menu, but the menu was off-screen
+     because the wrap clipped its descendant overflow). Instead the
+     children get matching rounded corners on their outer edges so
+     hover fills follow the wrap's rounded silhouette. */
   .export-wrap {
     position: relative;
     display: inline-flex;
     align-items: stretch;
     border: 1px solid var(--accent, #7a3a14);
     border-radius: 3px;
-    overflow: hidden;  /* clip child backgrounds at the rounded corners */
   }
-  /* Child buttons drop their own borders + radii so only the wrap's
-     outline is visible. They keep their typography from .vt-export. */
+  /* Child buttons drop their own borders + reset radii so only the
+     wrap's outline is visible. Each half gets corner radii on its
+     OUTER side only — so hover fills follow the wrap's rounded
+     silhouette without bleeding past it. */
   .view-toggle .se-action,
   .view-toggle .se-toggle {
     border: 0;
-    border-radius: 0;
     margin: 0;
   }
-  /* The divider — a soft inset line on the toggle's left edge.
-     Subtle enough that the two halves still read as one surface. */
+  .view-toggle .se-action {
+    border-radius: 2px 0 0 2px;
+  }
   .view-toggle .se-toggle {
     border-left: 1px solid rgba(122, 58, 20, 0.25);
+    border-radius: 0 2px 2px 0;
     padding: 3px 7px;
     min-width: 22px;
     display: inline-flex;
