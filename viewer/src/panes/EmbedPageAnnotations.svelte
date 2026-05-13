@@ -24,10 +24,20 @@
     useAnnotationCapability,
   } from "@embedpdf/plugin-annotation/svelte";
   import { useZoom } from "@embedpdf/plugin-zoom/svelte";
-  import { PdfAnnotationSubtype, type PdfAnnotationObject, type PdfTextAnnoObject, type PdfFreeTextAnnoObject } from "@embedpdf/models";
+  import {
+    PdfAnnotationSubtype,
+    type PdfAnnotationObject,
+    type PdfTextAnnoObject,
+    type PdfFreeTextAnnoObject,
+    type PdfSquareAnnoObject,
+    type PdfCircleAnnoObject,
+    type PdfLineAnnoObject,
+    type PdfInkAnnoObject,
+  } from "@embedpdf/models";
   import EmbedAnnotationSelectionMenu from "./EmbedAnnotationSelectionMenu.svelte";
   import EmbedStickyNoteRenderer from "./EmbedStickyNoteRenderer.svelte";
   import EmbedFreeTextRenderer from "./EmbedFreeTextRenderer.svelte";
+  import EmbedShapeRenderer from "./EmbedShapeRenderer.svelte";
   import { pdfNavState } from "../state/pdfNav.svelte";
 
   type Props = {
@@ -62,6 +72,44 @@
     onDoubleClick: (id, setEditingId) => setEditingId(id),
   });
 
+  /* Shape renderers: SQUARE / CIRCLE / LINE / INK all share one custom
+   * component for the same reason as TEXT — the bundled Svelte
+   * renderers use `__pointerdown =` delegation that Svelte 5.55 doesn't
+   * pick up, so the shapes render but ignore clicks. The component
+   * picks geometry off the annotation type. */
+  const squareRenderer = createRenderer({
+    id: "square",
+    matches: (a: PdfAnnotationObject): a is PdfSquareAnnoObject =>
+      a.type === PdfAnnotationSubtype.SQUARE,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: EmbedShapeRenderer as any,
+    interactionDefaults: { isDraggable: true, isResizable: true, isRotatable: false },
+  });
+  const circleRenderer = createRenderer({
+    id: "circle",
+    matches: (a: PdfAnnotationObject): a is PdfCircleAnnoObject =>
+      a.type === PdfAnnotationSubtype.CIRCLE,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: EmbedShapeRenderer as any,
+    interactionDefaults: { isDraggable: true, isResizable: true, isRotatable: false },
+  });
+  const lineRenderer = createRenderer({
+    id: "line",
+    matches: (a: PdfAnnotationObject): a is PdfLineAnnoObject =>
+      a.type === PdfAnnotationSubtype.LINE,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: EmbedShapeRenderer as any,
+    interactionDefaults: { isDraggable: true, isResizable: true, isRotatable: false },
+  });
+  const inkRenderer = createRenderer({
+    id: "ink",
+    matches: (a: PdfAnnotationObject): a is PdfInkAnnoObject =>
+      a.type === PdfAnnotationSubtype.INK,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: EmbedShapeRenderer as any,
+    interactionDefaults: { isDraggable: true, isResizable: false, isRotatable: false },
+  });
+
   /* Flash overlay: when the Annotations tab in the right pane single-
    * clicks a row, pdfNavState.flash is set for ~800ms. If the annotation
    * lives on THIS page, draw a thin accent-coloured outline around its
@@ -92,7 +140,14 @@
   {documentId}
   {pageIndex}
   {scale}
-  annotationRenderers={[stickyRenderer, freeTextRenderer]}
+  annotationRenderers={[
+    stickyRenderer,
+    freeTextRenderer,
+    squareRenderer,
+    circleRenderer,
+    lineRenderer,
+    inkRenderer,
+  ]}
 >
   {#snippet selectionMenuSnippet(props)}
     <EmbedAnnotationSelectionMenu {documentId} {...props} />

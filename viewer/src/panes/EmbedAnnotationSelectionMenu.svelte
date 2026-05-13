@@ -37,8 +37,17 @@
 
   const annotation = useAnnotationCapability();
 
-  const isSticky = $derived(
-    context.annotation.object.type === PdfAnnotationSubtype.TEXT,
+  const annType = $derived(context.annotation.object.type);
+  const isSticky = $derived(annType === PdfAnnotationSubtype.TEXT);
+  const isHighlight = $derived(annType === PdfAnnotationSubtype.HIGHLIGHT);
+  /* Shapes that carry their freeform comment under custom.comment (just
+   * like highlights). FreeText is excluded because its body lives in
+   * `contents` and is edited inline on the page rather than here. */
+  const isShape = $derived(
+    annType === PdfAnnotationSubtype.SQUARE ||
+      annType === PdfAnnotationSubtype.CIRCLE ||
+      annType === PdfAnnotationSubtype.LINE ||
+      annType === PdfAnnotationSubtype.INK,
   );
   /* Bookmarks are TEXT annotations flagged via `custom.bookmark`. They
    * don't carry user comments — the menu shows a single "Remove
@@ -47,8 +56,25 @@
     isSticky &&
       (context.annotation.object.custom as { bookmark?: boolean } | undefined)?.bookmark === true,
   );
+  /* Only highlights carry an excerpt (the captured selection text).
+   * Sticky notes use `contents` as the note body, shapes don't use it
+   * at all — neither should leak a stray excerpt block. */
   const excerpt = $derived<string>(
-    isSticky ? "" : context.annotation.object.contents ?? "",
+    isHighlight ? context.annotation.object.contents ?? "" : "",
+  );
+  const shapeKindLabel = $derived.by(() => {
+    switch (annType) {
+      case PdfAnnotationSubtype.SQUARE: return "rectangle";
+      case PdfAnnotationSubtype.CIRCLE: return "ellipse";
+      case PdfAnnotationSubtype.LINE:   return "line";
+      case PdfAnnotationSubtype.INK:    return "drawing";
+      default: return "annotation";
+    }
+  });
+  const deleteLabel = $derived(
+    isSticky ? "Delete note" :
+    isHighlight ? "Delete highlight" :
+    `Delete ${shapeKindLabel}`,
   );
   const initialComment = $derived<string>(
     isSticky
@@ -198,10 +224,10 @@
             type="button"
             class="del"
             onclick={remove}
-            title={isSticky ? "Delete this sticky note" : "Delete this highlight"}
-            aria-label={isSticky ? "Delete this sticky note" : "Delete this highlight"}
+            title={deleteLabel}
+            aria-label={deleteLabel}
           >
-            {isSticky ? "Delete note" : "Delete highlight"}
+            {deleteLabel}
           </button>
         </div>
       {/if}

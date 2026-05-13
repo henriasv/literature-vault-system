@@ -78,15 +78,19 @@
    * HIGHLIGHT respectively. */
   const STICKY_SUBTYPE = 1;
   const FREETEXT_SUBTYPE = 3;
+  const SQUARE_SUBTYPE = 4;
+  const CIRCLE_SUBTYPE = 5;
+  const LINE_SUBTYPE = 8;
   const HIGHLIGHT_SUBTYPE = 9;
+  const INK_SUBTYPE = 14;
 
   interface AnnotationRow {
     id: string;
     pageIndex: number;            // 0-based
-    kind: "bookmark" | "highlight" | "sticky" | "freetext" | "other";
+    kind: "bookmark" | "highlight" | "sticky" | "freetext" | "square" | "circle" | "line" | "ink" | "other";
     color: string | null;
     excerpt: string;              // highlight only
-    comment: string;              // user note (custom.comment for highlights, contents for stickies + freetext)
+    comment: string;              // user note (custom.comment for highlights/shapes, contents for stickies + freetext)
     /** Page-coord midpoint of the rect — passed as `pageCoordinates` to
      *  scrollToPage so the annotation lands at viewport centre. */
     center: { x: number; y: number } | null;
@@ -129,7 +133,11 @@
           isBookmark ? "bookmark" :
           a.type === HIGHLIGHT_SUBTYPE ? "highlight" :
           a.type === FREETEXT_SUBTYPE ? "freetext" :
-          a.type === STICKY_SUBTYPE ? "sticky" : "other";
+          a.type === STICKY_SUBTYPE ? "sticky" :
+          a.type === SQUARE_SUBTYPE ? "square" :
+          a.type === CIRCLE_SUBTYPE ? "circle" :
+          a.type === LINE_SUBTYPE ? "line" :
+          a.type === INK_SUBTYPE ? "ink" : "other";
         const contentsStr = typeof a.contents === "string" ? a.contents : "";
         const customComment =
           (a.custom && typeof a.custom.comment === "string" && a.custom.comment) || "";
@@ -829,6 +837,14 @@
                 <span class="ann-icon" aria-hidden="true">●</span>
               {:else if row.kind === "freetext"}
                 <span class="ann-icon ann-icon-freetext" aria-hidden="true">T</span>
+              {:else if row.kind === "square"}
+                <span class="ann-icon ann-icon-shape" aria-hidden="true">▭</span>
+              {:else if row.kind === "circle"}
+                <span class="ann-icon ann-icon-shape" aria-hidden="true">◯</span>
+              {:else if row.kind === "line"}
+                <span class="ann-icon ann-icon-shape" aria-hidden="true">／</span>
+              {:else if row.kind === "ink"}
+                <span class="ann-icon ann-icon-shape" aria-hidden="true">✎</span>
               {:else}
                 <span
                   class="ann-swatch"
@@ -852,6 +868,17 @@
                     <span class="ann-comment">{row.comment}</span>
                   {:else}
                     <span class="ann-excerpt ann-excerpt-empty">(empty)</span>
+                  {/if}
+                {:else if row.kind === "square" || row.kind === "circle" || row.kind === "line" || row.kind === "ink"}
+                  {#if row.comment}
+                    <span class="ann-comment">{row.comment}</span>
+                  {:else}
+                    <span class="ann-excerpt ann-excerpt-empty">
+                      {#if row.kind === "square"}rectangle
+                      {:else if row.kind === "circle"}ellipse
+                      {:else if row.kind === "line"}line
+                      {:else}drawing{/if}
+                    </span>
                   {/if}
                 {:else}
                   {#if row.comment}<span class="ann-comment">{row.comment}</span>{/if}
@@ -1284,6 +1311,10 @@
     font-family: var(--serif);
     font-size: 11px;
     font-weight: 700;
+  }
+  .ann-icon-shape {
+    color: var(--ink-70, rgba(26, 22, 18, 0.7));
+    font-size: 12px;
   }
   .ann-page {
     font-family: var(--sans);

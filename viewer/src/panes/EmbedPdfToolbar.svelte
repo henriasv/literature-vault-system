@@ -152,6 +152,19 @@
         activeToolId = null;
         provides.setActiveTool(null);
       }
+      /* Suppress the auto-popup of the comment menu on creation: the
+       * plugin selects fresh annotations by default, which pops the
+       * comment textarea immediately. The user wants the menu only on
+       * an explicit click. Skip bookmarks (their menu only has a
+       * single "remove" action so no harm letting it stay selected,
+       * and the toolbar's bookmark button doesn't want a flash of
+       * menu either way — deselecting is fine here too). FreeText
+       * stays selected because the user just placed it and the visual
+       * selection handles are needed to resize / move it before they
+       * commit. */
+      if (ann.type !== PdfAnnotationSubtype.FREETEXT && typeof ann.id === "string") {
+        provides.deselectAnnotation();
+      }
     });
     return () => off?.();
   });
