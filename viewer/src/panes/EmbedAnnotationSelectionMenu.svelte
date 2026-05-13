@@ -84,7 +84,13 @@
 
   /* Local draft. Reset whenever the *selected annotation* changes —
    * we key on the annotation id so switching between highlights
-   * doesn't bleed the prior draft. */
+   * doesn't bleed the prior draft.
+   *
+   * The textarea is intentionally NOT auto-focused on selection: with
+   * focus stolen, Backspace gets captured by the textarea instead of
+   * the window-level annotation keybind, so "select then Backspace to
+   * delete" silently does nothing. The user clicks into the textarea
+   * when they want to type. */
   let draft = $state("");
   let lastSeenId = $state<string | null>(null);
   let textareaEl = $state<HTMLTextAreaElement | undefined>(undefined);
@@ -93,19 +99,6 @@
     if (id !== lastSeenId) {
       lastSeenId = id;
       draft = initialComment;
-      /* Auto-focus so the user can start typing immediately; cursor at
-       * end so "add to existing comment" just works. */
-      queueMicrotask(() => {
-        const el = textareaEl;
-        if (!el) return;
-        el.focus();
-        const n = el.value.length;
-        try {
-          el.setSelectionRange(n, n);
-        } catch {
-          /* selection-range unsupported in some edge cases — ignore */
-        }
-      });
     }
   });
 
