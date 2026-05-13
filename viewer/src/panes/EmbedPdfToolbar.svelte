@@ -773,12 +773,34 @@
      * older engines degrade gracefully to the other rotation. */
     writing-mode: vertical-rl;
     writing-mode: sideways-lr;
+    /* In focus mode the TabBar (which is normally the window's drag
+     * surface) is hidden. Make the whole vertical strip draggable so
+     * the user can still move / snap the window. Individual buttons
+     * opt out via `-webkit-app-region: no-drag` below so they stay
+     * clickable. */
+    -webkit-app-region: drag;
+  }
+  /* Buttons and interactive controls inside the focus-mode strip
+     opt back out of the drag region — otherwise clicks become
+     window-drag gestures. `.btn` covers every toolbar button
+     (PREV, NEXT, FIT, ANNOTATE, FIND, EXIT FOCUS, every tool). */
+  .ep-toolbar-wrap.focus .btn,
+  .ep-toolbar-wrap.focus input,
+  .ep-toolbar-wrap.focus select {
+    -webkit-app-region: no-drag;
   }
   .ep-toolbar-wrap.focus .ep-toolbar {
     height: 100%;
     border-bottom: 0;
     overflow-x: visible;
     overflow-y: auto;
+    /* Traffic-light clearance: the macOS Overlay titleBarStyle keeps
+     * the red/yellow/green dots at the top-left of the window. The
+     * sideways toolbar would otherwise put its first item right
+     * under them. `padding-top` is physical-top regardless of
+     * writing-mode, so this works in sideways-lr too. */
+    padding-top: var(--tl-pad, 78px);
+    box-sizing: border-box;
   }
   /* Hide the ⌘F kbd hint — reads awkwardly rotated; the title tooltip
      still surfaces the shortcut. */
