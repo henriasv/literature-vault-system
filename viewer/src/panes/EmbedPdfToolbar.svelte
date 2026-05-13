@@ -794,12 +794,14 @@
     border-bottom: 0;
     overflow-x: visible;
     overflow-y: auto;
-    /* Traffic-light clearance: the macOS Overlay titleBarStyle keeps
-     * the red/yellow/green dots at the top-left of the window. The
-     * sideways toolbar would otherwise put its first item right
-     * under them. `padding-top` is physical-top regardless of
-     * writing-mode, so this works in sideways-lr too. */
-    padding-top: var(--tl-pad, 78px);
+    /* Traffic-light clearance — vertical. `--tl-pad` (78px) is the
+     * HORIZONTAL width of the traffic-light group; we only need
+     * the dots' height (~14px) plus a small visual breathing band.
+     * 36px sits the first toolbar item one comfortable line below
+     * the dots without leaving an awkward empty strip.
+     * `padding-top` is physical-top regardless of writing-mode, so
+     * this works under sideways-lr too. */
+    padding-top: 36px;
     box-sizing: border-box;
   }
   /* Hide the ⌘F kbd hint — reads awkwardly rotated; the title tooltip
@@ -815,12 +817,15 @@
      all symmetric SVGs so they don't need any rotation. */
   .ep-toolbar-wrap.focus .annotate-row {
     writing-mode: horizontal-tb;
-    top: 0;
+    /* Match the main toolbar's traffic-light clearance (the
+     * annotate-row sits to the right of the main strip and would
+     * otherwise have its first tool overlap the green dot). */
+    top: 36px;
     left: 100%;
     right: auto;
     bottom: auto;
     width: auto;
-    height: 100%;
+    height: calc(100% - 36px);
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
@@ -845,10 +850,10 @@
   }
   /* Find popout keeps horizontal writing-mode — it has a text input
      that doesn't fit a rotated layout. Anchor it to the right of the
-     strip rather than below. */
+     strip, below the traffic-light clearance. */
   .ep-toolbar-wrap.focus .find-row {
     writing-mode: horizontal-tb;
-    top: 0;
+    top: 36px;
     left: 100%;
     right: auto;
     bottom: auto;
