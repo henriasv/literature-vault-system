@@ -96,6 +96,21 @@ export const bibtexTemplates: BibtexTemplate[] = [
 }`,
   },
   {
+    label: "Student work (paper / project)",
+    type: "studentwork",
+    template: `@studentwork{CITEKEY_AUTO_FROM_FIELDS,
+  author      = {Lastname, Firstname},
+  title       = {{Assignment title}},
+  year        = {2026},
+  course      = {Course code or name},
+  institution = {University},
+  type        = {Term paper},
+  note        = {},
+  % citekey above is ignored — minted from author + year + title/DOI on save
+}`,
+    hint: "Non-standard @studentwork entry type for grading / commenting on student assignments. Set `type` to e.g. \"Term paper\", \"Project report\", \"Lab report\". `course` is custom — keep it short so it shows nicely in the library.",
+  },
+  {
     label: "Conference paper",
     type: "inproceedings",
     template: `@inproceedings{CITEKEY_AUTO_FROM_FIELDS,
