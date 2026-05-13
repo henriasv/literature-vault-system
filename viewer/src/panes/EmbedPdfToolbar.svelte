@@ -542,13 +542,11 @@
     </div>
 
     <div class="right">
-      <button
-        class="btn bookmark"
-        onclick={setOrMoveBookmark}
-        title={bookmark ? "Move the existing bookmark to where you are reading now" : "Mark where you are reading"}
-      >
-        {bookmark ? "MOVE BOOKMARK HERE" : "BOOKMARK"}
-      </button>
+      <!-- BOOKMARK button intentionally lives only in the right-pane
+           bookmark bar (between frontmatter and the EDIT/PREVIEW/
+           ANNOTATIONS toggle). The bar's "set here" / "move here"
+           actions dispatch requestBookmarkMove which we still listen
+           to via pdfNavState.pendingBookmarkMove. -->
       <button
         class="btn annotate-toggle"
         class:active={annotateOpen}

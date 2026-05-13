@@ -778,26 +778,37 @@
     </header>
   {/if}
 
-  {#if !rawMode && bookmarkRow}
+  {#if !rawMode}
     <div class="bookmark-bar" role="group" aria-label="Bookmark">
       <span class="bm-icon" aria-hidden="true">📑</span>
       <span class="bm-label">BOOKMARK</span>
-      <span class="bm-page">
-        p.{bookmarkRow.pageIndex + 1}{#if totalPagesForBookmark > 0}<span class="bm-page-total">/{totalPagesForBookmark}</span>{/if}
-      </span>
-      <span class="bm-sep" aria-hidden="true">—•—</span>
-      <button
-        type="button"
-        class="bm-action"
-        onclick={onBookmarkMoveHere}
-        title="Move the bookmark to where you are reading now"
-      >move here</button>
-      <button
-        type="button"
-        class="bm-action"
-        onclick={onBookmarkJump}
-        title="Scroll the PDF to the bookmark"
-      >jump</button>
+      {#if bookmarkRow}
+        <span class="bm-page">
+          p.{bookmarkRow.pageIndex + 1}{#if totalPagesForBookmark > 0}<span class="bm-page-total">/{totalPagesForBookmark}</span>{/if}
+        </span>
+        <span class="bm-sep" aria-hidden="true">—•—</span>
+        <button
+          type="button"
+          class="bm-action"
+          onclick={onBookmarkMoveHere}
+          title="Move the bookmark to where you are reading now"
+        >move here</button>
+        <button
+          type="button"
+          class="bm-action"
+          onclick={onBookmarkJump}
+          title="Scroll the PDF to the bookmark"
+        >jump</button>
+      {:else}
+        <span class="bm-empty">(none)</span>
+        <span class="bm-sep" aria-hidden="true">—•—</span>
+        <button
+          type="button"
+          class="bm-action"
+          onclick={onBookmarkMoveHere}
+          title="Set the bookmark to where you are currently reading in the PDF"
+        >set here</button>
+      {/if}
     </div>
   {/if}
 
@@ -1179,6 +1190,10 @@
     color: var(--ink, #1a1612);
   }
   .bm-page-total {
+    color: var(--ink-50, rgba(26, 22, 18, 0.5));
+  }
+  .bm-empty {
+    font-style: italic;
     color: var(--ink-50, rgba(26, 22, 18, 0.5));
   }
   .bm-sep {
