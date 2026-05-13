@@ -31,6 +31,7 @@ type ScrollProvides = {
 type AnnotationProvides = {
   deleteAnnotation: (pageIndex: number, id: string) => unknown;
   createAnnotation: (pageIndex: number, ann: PdfAnnotationObject) => unknown;
+  deselectAnnotation?: () => unknown;
 };
 
 /** Returns true if a reparent happened. */
@@ -78,19 +79,33 @@ export function maybeReparentByY(args: {
     return false;
   }
 
+  /* Build the replacement annotation. We use a fresh id (and Date)
+   * rather than reusing the originals — the bundled bookmark "move"
+   * does the same, and reusing the original id while the plugin still
+   * holds a reference to it (e.g., selection state) leaves things in
+   * a broken half-deleted state where the annotation freezes and
+   * disappears from the sidecar list. */
   const newAnnotation = {
     ...annotation,
+    id: typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${annotation.id}-${Date.now()}`,
     pageIndex: targetIndex,
     rect: {
       ...rect,
       origin: { x: rect.origin.x, y: newOriginY },
     },
+    modified: new Date(),
   } as PdfAnnotationObject;
 
-  /* Delete-then-create. The reducer indexes annotations by page in
+  /* Deselect before delete so the framework's selection state doesn't
+   * keep a dangling reference to the about-to-be-removed annotation —
+   * that was the source of the "all annotations freeze" symptom. Then
+   * delete + create. The reducer indexes annotations by page in
    * state.pages, so an in-place pageIndex update would leave a phantom
-   * on the original page. Same id kept so any sidecar exports
-   * downstream see the move rather than a delete + new annotation. */
+   * on the original page; delete-then-create with a fresh id is the
+   * cleanest cross-page move. */
+  ann.deselectAnnotation?.();
   ann.deleteAnnotation(pageIndex, annotation.id);
   ann.createAnnotation(targetIndex, newAnnotation);
   return true;

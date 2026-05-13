@@ -160,10 +160,10 @@
       onClick?.(e);
       return;
     }
-    /* Bookmark is a singleton anchored to its containing page — moving
-     * it across pages is the toolbar's "move bookmark here" button's
-     * job, not a side-effect of a manual drag. Skip reparenting. */
-    if (isBookmark) return;
+    /* Reparenting also applies to the bookmark — dragging it past a
+     * page boundary moves it onto the neighbouring page. The toolbar's
+     * "MOVE BOOKMARK HERE" button still works as the auto-snap-to-
+     * current-page-reading-position shortcut. */
     maybeReparentByY({
       annotation: annotation.object as unknown as PdfAnnotationObject,
       scroll: scroll.provides,
