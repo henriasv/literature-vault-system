@@ -1,5 +1,6 @@
 mod atomic;
 mod collections;
+mod export;
 mod frontmatter;
 mod inbox;
 mod index;
@@ -225,6 +226,7 @@ pub fn run() {
             inbox::inbox_extract_bibtex_stub,
             inbox::fetch_crossref_record,
             inbox::extract_ids_from_pdf,
+            export::export_annotated_pdf,
             session::load_session,
             session::save_session,
             session::load_tab_state,

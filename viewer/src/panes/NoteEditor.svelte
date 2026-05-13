@@ -15,6 +15,7 @@
   import { tags as t } from "@lezer/highlight";
   import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+  import { invoke } from "@tauri-apps/api/core";
   import { marked } from "marked";
   import { readNote, writeNote, setTags, splitNote, paperLabel, readAnnotations } from "../lib/vault";
   import {
@@ -217,6 +218,56 @@
   }
   function onBookmarkMoveHere(): void {
     requestBookmarkMove(citekey);
+  }
+
+  /* ---- Export annotated PDF ------------------------------------------
+   * Shells out to scripts/export_annotated_pdf.py via the
+   * export_annotated_pdf Tauri command. The script stamps a numbered
+   * accent-coloured badge next to each user annotation on the original
+   * PDF pages, then appends appendix pages — first the .md note,
+   * then a numbered list mirroring the badges (page reference,
+   * excerpt for highlights, comment for everything else).
+   *
+   * The output lands at PDFs/{citekey}_annotated.pdf next to the
+   * original. We surface the result path in the status line below
+   * the toggle so the user can find the file — no auto-open since
+   * Tauri has no first-party "open file in default app" path without
+   * adding a new plugin. */
+  let exporting = $state(false);
+  let exportResult = $state<{ output: string; annotations: number } | null>(null);
+  let exportError = $state<string | null>(null);
+  let exportDismissTimer: number | null = null;
+
+  async function exportAnnotatedPdf(): Promise<void> {
+    if (exporting) return;
+    exporting = true;
+    exportError = null;
+    exportResult = null;
+    if (exportDismissTimer !== null) {
+      window.clearTimeout(exportDismissTimer);
+      exportDismissTimer = null;
+    }
+    /* Flush any unsaved note edits first so the export picks up the
+     * latest .md content. Without this the appendix would reflect the
+     * note as it last hit disk (potentially missing the last few
+     * keystrokes). */
+    await flushSave();
+    try {
+      const r = await invoke<{ output: string; annotations: number }>(
+        "export_annotated_pdf",
+        { citekey },
+      );
+      exportResult = r;
+      /* Auto-dismiss the success banner after 8s. */
+      exportDismissTimer = window.setTimeout(() => {
+        exportResult = null;
+        exportDismissTimer = null;
+      }, 8000);
+    } catch (e) {
+      exportError = String(e);
+    } finally {
+      exporting = false;
+    }
   }
 
   marked.setOptions({ gfm: true, breaks: false });
@@ -819,7 +870,23 @@
       <button class:on={viewMode === "annotations"} onclick={() => (viewMode = "annotations")}>
         Annotations{#if annotationRowsNoBookmark.length > 0} <span class="count">{annotationRowsNoBookmark.length}</span>{/if}
       </button>
+      <span class="vt-grow"></span>
+      <button
+        class="vt-export"
+        onclick={exportAnnotatedPdf}
+        disabled={exporting}
+        title="Export an annotated PDF with the note + a numbered annotation list as appendix"
+      >{exporting ? "Exporting…" : "Export PDF"}</button>
     </div>
+    {#if exportResult}
+      <div class="export-status">
+        Exported {exportResult.annotations} annotation{exportResult.annotations === 1 ? "" : "s"} —
+        <span class="export-path" title={exportResult.output}>{exportResult.output}</span>
+      </div>
+    {/if}
+    {#if exportError}
+      <div class="export-status export-error">Export failed: {exportError}</div>
+    {/if}
   {/if}
 
   <div class="body-stack">
@@ -1227,6 +1294,45 @@
     align-items: baseline;
     gap: 14px;
     padding: 14px 22px 10px;
+  }
+  /* Spacer + export button pushed to the right edge of the toggle. */
+  .vt-grow { flex: 1; }
+  .view-toggle .vt-export {
+    border: 1px solid var(--accent, #7a3a14);
+    color: var(--accent, #7a3a14);
+    background: transparent;
+    padding: 3px 8px;
+    border-bottom: 1px solid var(--accent, #7a3a14);
+    border-radius: 3px;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    cursor: pointer;
+  }
+  .view-toggle .vt-export:hover:not(:disabled) {
+    background: var(--accent, #7a3a14);
+    color: var(--panel, #fff);
+  }
+  .view-toggle .vt-export:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .export-status {
+    padding: 6px 22px 0;
+    font-family: var(--sans);
+    font-size: 10.5px;
+    color: var(--ink-70, rgba(26, 22, 18, 0.7));
+  }
+  .export-status .export-path {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-50, rgba(26, 22, 18, 0.5));
+    word-break: break-all;
+  }
+  .export-status.export-error {
+    color: #b03020;
   }
   .view-toggle button {
     border: 0;
