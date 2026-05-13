@@ -340,27 +340,29 @@ def _styles():
 def build_cover_pages(
     note_md: str, frontmatter: dict, citekey: str, page_size
 ) -> BytesIO | None:
-    """Build the cover page(s) that go at the FRONT of the export:
-    title block + the rendered .md note. Returns None when the note
-    is empty (no cover at all)."""
+    """Build the cover page(s) that go at the FRONT of the export.
+    Top-of-page banner: paper title (italic) + citekey (monospace) on
+    one or two small lines — just enough to identify the paper.
+    Below the banner: the .md note rendered verbatim, including
+    whatever headings the user wrote (we DON'T inject our own h1 /
+    "Notes" section heading — the user's note structure stands)."""
     if not note_md.strip() and not frontmatter.get("title"):
         return None
     buf = BytesIO()
     st = _styles()
     doc = SimpleDocTemplate(
         buf, pagesize=page_size, topMargin=40, bottomMargin=40,
-        leftMargin=40, rightMargin=40, title=f"Notes — {citekey}",
+        leftMargin=40, rightMargin=40, title=citekey,
     )
     flowables: list = []
-    flowables.append(Paragraph("Notes &amp; Annotations", st["title"]))
-    if frontmatter.get("title"):
-        flowables.append(Paragraph(f"<i>{escape_html(frontmatter['title'])}</i>", st["meta"]))
+    title = frontmatter.get("title")
+    if title:
+        flowables.append(Paragraph(f"<i>{escape_html(title)}</i>", st["meta"]))
     flowables.append(
         Paragraph(f"<font face='Courier'>{escape_html(citekey)}</font>", st["meta"])
     )
-    flowables.append(Spacer(1, 12))
+    flowables.append(Spacer(1, 10))
     if note_md.strip():
-        flowables.append(Paragraph("Notes", st["section"]))
         flowables.extend(md_to_flowables(note_md, st["raw"]))
     doc.build(flowables)
     buf.seek(0)
@@ -408,10 +410,22 @@ def build_margin_overlay(
     """Generate the overlay for a single page in `margin` mode. The
     overlay covers the entire wider page; the left portion paints the
     highlight + badge layer (matching the original-page geometry),
-    the right portion renders the per-page annotation list (numbered
-    items mirroring the badges, with excerpt + comment). Returns a
-    pypdf PageObject ready to merge_page over the widened blank
-    canvas."""
+    the right portion renders per-annotation comments aligned
+    vertically to where each annotation appears on the page.
+    Returns a pypdf PageObject ready to merge_page over the widened
+    blank canvas.
+
+    Layout rules in this mode:
+      - The highlighted text isn't repeated in the margin — the
+        highlight color overlay on the page is the excerpt. Margin
+        entries for highlights only show the user's comment.
+      - Annotations without a comment (e.g. a highlight that just
+        marks emphasis) get the badge on the page but no margin
+        entry — keeps the column uncluttered.
+      - Each visible margin entry is anchored to the y-position of
+        its annotation, then nudged downward to avoid overlapping a
+        prior entry. Comments that don't fit before the page bottom
+        get clipped — use `appendix` mode for verbose feedback."""
     new_w = orig_w + margin_w
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=(new_w, orig_h))
@@ -425,40 +439,90 @@ def build_margin_overlay(
     # geometry (badges still clamp to `orig_w`, not `new_w`).
     _draw_highlights_and_shapes(c, anns, orig_h)
     _draw_badges(c, anns, orig_h, orig_w)
-    # Right-side panel: per-page annotation list. Flow through a Frame
-    # so long comments wrap to the column width.
-    if anns:
-        from reportlab.platypus import Frame
-        st = _styles()
-        panel_left = orig_w + 8
-        panel_bottom = 16
-        panel_width = margin_w - 16
-        panel_height = orig_h - 32
-        frame = Frame(
-            panel_left, panel_bottom, panel_width, panel_height,
-            leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0,
-            showBoundary=0,
-        )
-        flowables: list = []
-        for ann in anns:
-            n = ann["number"]
-            head = (
-                f"<b>{n}.</b> &nbsp;p.{ann['page'] + 1}"
-                f"&nbsp; <font color='#888888'>· {ann['kind']}</font>"
-            )
-            flowables.append(Paragraph(head, st["item"]))
-            if ann["excerpt"]:
-                flowables.append(
-                    Paragraph(f"<i>“{escape_html(ann['excerpt'])}”</i>", st["excerpt"])
-                )
-            if ann["comment"]:
-                flowables.append(
-                    Paragraph(
-                        escape_html(ann["comment"]).replace("\n", "<br/>"),
-                        st["comment"],
-                    )
-                )
-        frame.addFromList(flowables, c)
+    if not anns:
+        c.save()
+        buf.seek(0)
+        return PdfReader(buf).pages[0]
+
+    # Per-annotation comments aligned to annotation y-position.
+    # Each margin entry starts with a small accent-coloured numbered
+    # badge matching the one stamped on the PDF page, then the kind
+    # label and the comment text, indented so all lines clear the
+    # badge.
+    st = _styles()
+    panel_left = orig_w + 10
+    panel_width = margin_w - 18
+    gap = 8
+    badge_r = 7.0
+    text_indent = 2 * badge_r + 5  # space for badge + small gap
+    # Paragraph style for the margin entry, with a leftIndent so text
+    # sits to the right of the badge. New style each loop is wasteful
+    # but simple; build once here.
+    margin_style = ParagraphStyle(
+        "margin_item",
+        parent=st["item"],
+        leftIndent=text_indent,
+        firstLineIndent=0,
+        spaceAfter=0,
+    )
+    # Sort top-down by sidecar y (top-origin: ascending y = lower
+    # visually).
+    ordered = sorted(anns, key=lambda a: a["rect"]["origin"]["y"])
+    # `cursor_pdf_y` tracks the bottom of the previously-placed
+    # comment in PDF coords (bottom-origin). The next comment's TOP
+    # must be ≤ cursor_pdf_y - gap.
+    cursor_pdf_y = orig_h  # page top, no prior comment yet
+    for ann in ordered:
+        # Skip annotations with no comment AND nothing else to say.
+        # Highlights without a comment: yellow on the page already
+        # speaks for itself.
+        if not ann["comment"] and ann["kind"] == "highlight":
+            continue
+        body_parts: list[str] = [
+            f"<font color='#888888'>{ann['kind']}</font>"
+        ]
+        # For non-highlight kinds we include excerpt (highlights are
+        # the only kind that puts its body text on the page itself).
+        if ann["kind"] != "highlight" and ann["excerpt"]:
+            body_parts.append(f"<i>“{escape_html(ann['excerpt'])}”</i>")
+        if ann["comment"]:
+            body_parts.append(escape_html(ann["comment"]).replace("\n", "<br/>"))
+        full_text = "<br/>".join(body_parts)
+        p = Paragraph(full_text, margin_style)
+        try:
+            _w, h = p.wrap(panel_width, orig_h)
+        except Exception:
+            continue
+        # Top of THIS comment in PDF coords.
+        ann_top_pdf = orig_h - ann["rect"]["origin"]["y"]
+        max_allowed_top = cursor_pdf_y - gap
+        top = min(ann_top_pdf, max_allowed_top)
+        # Don't drop off the bottom of the page; if a comment can't
+        # fit it'll be clipped at the bottom.
+        bottom = top - h
+        if bottom < 8:
+            bottom = 8
+            top = bottom + h
+        p.drawOn(c, panel_left, bottom)
+        # Margin badge — same accent-on-white look as the on-page
+        # badge, sized slightly smaller. Centred vertically near the
+        # top of the paragraph (one line-height down).
+        badge_x = panel_left + badge_r
+        badge_y = top - badge_r - 1
+        c.saveState()
+        c.setFillColor(HexColor("#ffffff"))
+        c.setStrokeColor(HexColor("#ffffff"))
+        c.circle(badge_x, badge_y, badge_r + 1, fill=1, stroke=0)
+        c.setFillColor(HexColor(ACCENT_HEX))
+        c.setStrokeColor(HexColor(ACCENT_HEX))
+        c.circle(badge_x, badge_y, badge_r, fill=1, stroke=1)
+        c.setFillColor(HexColor("#ffffff"))
+        c.setFont("Helvetica-Bold", 9)
+        num_str = str(ann["number"])
+        num_w = c.stringWidth(num_str, "Helvetica-Bold", 9)
+        c.drawString(badge_x - num_w / 2, badge_y - 3, num_str)
+        c.restoreState()
+        cursor_pdf_y = bottom
     c.save()
     buf.seek(0)
     return PdfReader(buf).pages[0]
