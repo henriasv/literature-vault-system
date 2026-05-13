@@ -29,17 +29,36 @@
                      target.isContentEditable)) return;
       const annProv = annotation.provides;
       if (!annProv) return;
-      /* Read selection straight off the document state proxy instead of
-       * the capability's `getSelectedAnnotation()` shortcut — the proxy
-       * is always up-to-date with the latest store dispatch, the
-       * shortcut can resolve to null while the state still says
-       * selected. */
-      const ids = annotation.state.selectedUids ?? [];
-      if (ids.length === 0) return;
+      /* Read selection straight off the document state.
+       *
+       * Two sources, tried in order:
+       *   1. the reactive proxy from `useAnnotation` (the synchronous
+       *      mirror of the document store);
+       *   2. a direct `getState()` call on the doc-bound provides, in
+       *      case the proxy hasn't caught the latest reducer dispatch
+       *      (the bundled annotation plugin's onStateChange fires async
+       *      for some events).
+       * Either source returns the same selectedUids list; we just need
+       * one of them to have it. */
+      const proxyUids: string[] = annotation.state?.selectedUids ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const directState = (annProv as any).getState?.();
+      const directUids: string[] = directState?.selectedUids ?? [];
+      const uids = proxyUids.length > 0 ? proxyUids : directUids;
+      if (uids.length === 0) {
+        console.debug("[annotation-keybind] Backspace pressed but no annotation selected", {
+          proxyUids, directUids, target,
+        });
+        return;
+      }
       e.preventDefault();
-      for (const id of ids) {
-        const t = annProv.getAnnotationById?.(id);
-        if (t) annProv.deleteAnnotation(t.object.pageIndex, t.object.id);
+      for (const uid of uids) {
+        const t = annProv.getAnnotationById?.(uid);
+        if (!t) {
+          console.warn("[annotation-keybind] selected uid has no annotation", uid);
+          continue;
+        }
+        annProv.deleteAnnotation(t.object.pageIndex, t.object.id);
       }
     }
     window.addEventListener("keydown", onKeydown);
