@@ -27,6 +27,9 @@
 -->
 <script lang="ts">
   import { useAnnotationCapability } from "@embedpdf/plugin-annotation/svelte";
+  import { useScroll } from "@embedpdf/plugin-scroll/svelte";
+  import type { PdfAnnotationObject } from "@embedpdf/models";
+  import { maybeReparentByY } from "../lib/annotation-reparent";
 
   type AnnObj = {
     id: string;
@@ -58,11 +61,13 @@
     isSelected,
     isEditing,
     scale,
+    documentId,
     onClick,
     appearanceActive = false,
   }: Props = $props();
 
   const ann = useAnnotationCapability();
+  const scroll = useScroll(() => documentId);
 
   /* Visual: post-it yellow fill, dark ink, subtle border. Defaults
    * win when the annotation hasn't been patched with explicit values. */
@@ -76,16 +81,12 @@
   const outerW = $derived(currentObject.rect.size.width * scale);
   const outerH = $derived(currentObject.rect.size.height * scale);
 
-  /* When the framework drag wrapper takes over (annotation selected,
-   * not editing), our renderer turns off pointer events so the drag
-   * surface gets the next gesture — matches the sticky-note renderer. */
-  const pointerEvents = $derived(
-    !onClick
-      ? "none"
-      : isSelected && !isEditing
-        ? "none"
-        : "auto",
-  );
+  /* "Loose" drag: keep pointer-events auto in every state except when
+   * onClick is unset. Our drag bypasses the framework's clamped drag
+   * surface so the user can fling the post-it off the page; we
+   * reparent on drag end. While editing, the contenteditable inside
+   * the post-it captures pointer events itself. */
+  const pointerEvents = $derived(onClick ? "auto" : "none");
   const cursor = $derived(
     isEditing ? "text" : isSelected ? "move" : onClick ? "move" : "default",
   );
@@ -222,7 +223,15 @@
       /* harmless if not the active capture target */
     }
     drag = null;
-    if (!wasMoved) onClick?.(e);
+    if (!wasMoved) {
+      onClick?.(e);
+      return;
+    }
+    maybeReparentByY({
+      annotation: annotation.object as unknown as PdfAnnotationObject,
+      scroll: scroll.provides,
+      ann: ann.provides,
+    });
   }
 </script>
 

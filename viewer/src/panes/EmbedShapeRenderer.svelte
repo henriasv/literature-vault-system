@@ -18,7 +18,9 @@
 -->
 <script lang="ts">
   import { useAnnotationCapability } from "@embedpdf/plugin-annotation/svelte";
-  import { PdfAnnotationSubtype } from "@embedpdf/models";
+  import { useScroll } from "@embedpdf/plugin-scroll/svelte";
+  import { PdfAnnotationSubtype, type PdfAnnotationObject } from "@embedpdf/models";
+  import { maybeReparentByY } from "../lib/annotation-reparent";
 
   type Point = { x: number; y: number };
   type Rect = { origin: Point; size: { width: number; height: number } };
@@ -55,11 +57,13 @@
     currentObject,
     isSelected,
     scale,
+    documentId,
     onClick,
     appearanceActive = false,
   }: Props = $props();
 
   const ann = useAnnotationCapability();
+  const scroll = useScroll(() => documentId);
 
   const strokeColor = $derived(
     currentObject.strokeColor ?? currentObject.color ?? "#7a3a14",
@@ -110,13 +114,14 @@
     currentObject.linePoints ? toLocal(currentObject.linePoints.end) : null,
   );
 
-  /* When the annotation is selected, AnnotationContainer wraps a drag
-   * surface OVER us. Disable our pointer events so the framework's
-   * drag / resize handles take over. */
-  const pointerEvents = $derived(
-    !onClick ? "none" : isSelected ? "none" : "auto",
-  );
-  const cursor = $derived(isSelected ? "move" : onClick ? "move" : "default");
+  /* "Loose" drag: keep pointer-events auto even when selected so the
+   * framework's clamped-to-page drag surface never fires — our own
+   * `moveAnnotation('delta')` handler doesn't clamp, so the user can
+   * fling the shape onto the recess or onto a neighbouring page, and
+   * we reparent on drag end (see onPointerUp). Resize handles live
+   * outside the renderer's body so they keep working. */
+  const pointerEvents = $derived(onClick ? "auto" : "none");
+  const cursor = $derived(onClick ? "move" : "default");
 
   /* ---- Click vs drag --------------------------------------------------
    * Same pattern as EmbedStickyNoteRenderer: capture pointer, threshold
@@ -181,7 +186,18 @@
       /* releasePointerCapture throws if not the active capture target. */
     }
     drag = null;
-    if (!wasMoved) onClick?.(e);
+    if (!wasMoved) {
+      onClick?.(e);
+      return;
+    }
+    /* If the user flung the shape off the current page vertically,
+     * re-anchor it to the neighbouring page. One step per drag —
+     * spanning more than one page over requires another drag. */
+    maybeReparentByY({
+      annotation: annotation.object as unknown as PdfAnnotationObject,
+      scroll: scroll.provides,
+      ann: ann.provides,
+    });
   }
 
   const ariaLabel = $derived.by(() => {

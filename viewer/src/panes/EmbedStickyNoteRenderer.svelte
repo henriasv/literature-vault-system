@@ -20,6 +20,9 @@
 -->
 <script lang="ts">
   import { useAnnotationCapability } from "@embedpdf/plugin-annotation/svelte";
+  import { useScroll } from "@embedpdf/plugin-scroll/svelte";
+  import type { PdfAnnotationObject } from "@embedpdf/models";
+  import { maybeReparentByY } from "../lib/annotation-reparent";
 
   type AnnObj = {
     id: string;
@@ -46,11 +49,13 @@
     currentObject,
     isSelected,
     scale,
+    documentId,
     onClick,
     appearanceActive = false,
   }: Props = $props();
 
   const ann = useAnnotationCapability();
+  const scroll = useScroll(() => documentId);
 
   /* A bookmark annotation = TEXT subtype with custom.bookmark = true.
    * Rendered as a ribbon icon in the accent colour to distinguish it
@@ -60,13 +65,13 @@
   const color = $derived(currentObject.strokeColor ?? currentObject.color ?? "#FFCD45");
   const opacity = $derived(currentObject.opacity ?? 1);
 
-  /* When the annotation is selected, AnnotationContainer wraps a drag
-   * surface OVER us. We disable our own pointer events so the framework's
-   * drag/menu handlers get the next interaction. */
-  const pointerEvents = $derived(
-    !onClick ? "none" : isSelected ? "none" : "auto",
-  );
-  const cursor = $derived(isSelected ? "move" : onClick ? "move" : "default");
+  /* "Loose" drag: keep pointer-events auto even when selected so the
+   * framework's clamped drag-surface never fires — our
+   * `moveAnnotation('delta')` handler doesn't clamp, so the user can
+   * fling the sticky onto the recess or onto a neighbouring page. We
+   * reparent on drag end (see onPointerUp). */
+  const pointerEvents = $derived(onClick ? "auto" : "none");
+  const cursor = $derived(onClick ? "move" : "default");
 
   /* Contrast-derived stroke colour for the line glyphs inside the icon. */
   const lineColor = $derived.by(() => {
@@ -151,7 +156,19 @@
        * harmless. */
     }
     drag = null;
-    if (!wasMoved) onClick?.(e);
+    if (!wasMoved) {
+      onClick?.(e);
+      return;
+    }
+    /* Bookmark is a singleton anchored to its containing page — moving
+     * it across pages is the toolbar's "move bookmark here" button's
+     * job, not a side-effect of a manual drag. Skip reparenting. */
+    if (isBookmark) return;
+    maybeReparentByY({
+      annotation: annotation.object as unknown as PdfAnnotationObject,
+      scroll: scroll.provides,
+      ann: ann.provides,
+    });
   }
 </script>
 
