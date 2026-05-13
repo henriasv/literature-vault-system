@@ -24,9 +24,10 @@
     useAnnotationCapability,
   } from "@embedpdf/plugin-annotation/svelte";
   import { useZoom } from "@embedpdf/plugin-zoom/svelte";
-  import { PdfAnnotationSubtype, type PdfAnnotationObject, type PdfTextAnnoObject } from "@embedpdf/models";
+  import { PdfAnnotationSubtype, type PdfAnnotationObject, type PdfTextAnnoObject, type PdfFreeTextAnnoObject } from "@embedpdf/models";
   import EmbedAnnotationSelectionMenu from "./EmbedAnnotationSelectionMenu.svelte";
   import EmbedStickyNoteRenderer from "./EmbedStickyNoteRenderer.svelte";
+  import EmbedFreeTextRenderer from "./EmbedFreeTextRenderer.svelte";
   import { pdfNavState } from "../state/pdfNav.svelte";
 
   type Props = {
@@ -45,6 +46,20 @@
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     component: EmbedStickyNoteRenderer as any,
     interactionDefaults: { isDraggable: true, isResizable: false, isRotatable: false },
+  });
+
+  /* Custom FreeText renderer: replaces EmbedPDF's built-in to (a) bind
+   * onpointerdown as a normal attribute so single-click selection works,
+   * (b) implement press-and-drag, and (c) auto-grow the rect as the user
+   * types so text isn't clipped. See EmbedFreeTextRenderer.svelte. */
+  const freeTextRenderer = createRenderer({
+    id: "freeText",
+    matches: (a: PdfAnnotationObject): a is PdfFreeTextAnnoObject =>
+      a.type === PdfAnnotationSubtype.FREETEXT && a.intent !== "FreeTextCallout",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: EmbedFreeTextRenderer as any,
+    interactionDefaults: { isDraggable: true, isResizable: true, isRotatable: false },
+    onDoubleClick: (id, setEditingId) => setEditingId(id),
   });
 
   /* Flash overlay: when the Annotations tab in the right pane single-
@@ -77,7 +92,7 @@
   {documentId}
   {pageIndex}
   {scale}
-  annotationRenderers={[stickyRenderer]}
+  annotationRenderers={[stickyRenderer, freeTextRenderer]}
 >
   {#snippet selectionMenuSnippet(props)}
     <EmbedAnnotationSelectionMenu {documentId} {...props} />

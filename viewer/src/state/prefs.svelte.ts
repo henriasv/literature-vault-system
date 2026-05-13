@@ -13,6 +13,12 @@ interface PrefsState {
   collectionsPanelOpen: boolean;
   collectionsPanelWidth: number;
   recents: RecentEntry[];
+  /** Focus / reading mode: hides library, tab bar and collections so
+   *  the PDF can take the full height of the window, and re-orients
+   *  the PDF toolbar to a vertical strip on the left so the page area
+   *  isn't squeezed by a top toolbar. Toggled from the toolbar's FOCUS
+   *  button, also flips the Tauri window to fullscreen. */
+  focusMode: boolean;
 }
 
 const RECENT_LIMIT = 30;
@@ -24,6 +30,7 @@ export const prefsState = $state<PrefsState>({
   collectionsPanelOpen: false,
   collectionsPanelWidth: 260,
   recents: [],
+  focusMode: false,
 });
 
 export function pushRecent(citekey: string): void {
@@ -50,4 +57,19 @@ export function normalizeRecents(raw: unknown): RecentEntry[] {
 
 export function toggleLibrary(): void {
   prefsState.libraryCollapsed = !prefsState.libraryCollapsed;
+}
+
+/** Toggle focus / reading mode. Also flips the Tauri window to
+ *  fullscreen so the OS chrome is hidden along with the app chrome. */
+export async function toggleFocusMode(): Promise<void> {
+  const next = !prefsState.focusMode;
+  prefsState.focusMode = next;
+  try {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    await getCurrentWindow().setFullscreen(next);
+  } catch (e) {
+    /* Non-fatal — the layout still flips even if the window can't
+     * enter fullscreen (e.g., outside Tauri or permission denied). */
+    console.warn("[focus] setFullscreen failed", e);
+  }
 }

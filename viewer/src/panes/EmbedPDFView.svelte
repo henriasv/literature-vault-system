@@ -55,6 +55,7 @@
   import { readAnnotations, writeAnnotations } from "../lib/vault";
   import { HIGHLIGHT_COLORS } from "../lib/highlight-colors";
   import { bumpSidecarVersion } from "../state/pdfNav.svelte";
+  import { prefsState } from "../state/prefs.svelte";
 
   type Props = { citekey: string };
   let { citekey }: Props = $props();
@@ -257,7 +258,7 @@
   }
 </script>
 
-<div class="ep-host" bind:this={epHost}>
+<div class="ep-host" class:focus={prefsState.focusMode} bind:this={epHost}>
   {#if pdfEngine.error}
     <div class="banner err">PDF engine failed: {pdfEngine.error.message}</div>
   {:else if srcError}
@@ -272,7 +273,7 @@
         {:else if !activeDocumentId}
           <div class="banner muted">Loading document…</div>
         {:else}
-          <EmbedPdfToolbar documentId={activeDocumentId} />
+          <EmbedPdfToolbar documentId={activeDocumentId} {citekey} />
           <EmbedJumpListener documentId={activeDocumentId} {citekey} />
 
           <DocumentContent documentId={activeDocumentId}>
@@ -373,8 +374,16 @@
     flex-direction: column;
     background: var(--backdrop, #fcfaf5);
   }
+  /* Focus mode: stack toolbar (which we render as a vertical strip)
+     beside the PDF instead of above it. The toolbar's own CSS handles
+     its internal column layout — here we just flip the container's
+     main-axis direction. */
+  .ep-host.focus {
+    flex-direction: row;
+  }
   .doc-area {
     flex: 1 1 auto;
+    min-width: 0;
     min-height: 0;
     display: flex;
   }

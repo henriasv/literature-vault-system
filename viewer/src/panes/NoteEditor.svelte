@@ -25,7 +25,12 @@
     refreshLibrary,
     toggleTagFilter,
   } from "../state/library.svelte";
-  import { pdfNavState, requestJump, requestFlash } from "../state/pdfNav.svelte";
+  import {
+    pdfNavState,
+    requestJump,
+    requestFlash,
+    requestBookmarkMove,
+  } from "../state/pdfNav.svelte";
 
   let { citekey }: { citekey: string } = $props();
 
@@ -69,17 +74,19 @@
    * `sidecarVersion` is bumped by EmbedPDFView after a save (so adding /
    * editing in the PDF pane refreshes the list reactively). */
   /* Numeric subtype IDs — kept inline to avoid pulling the EmbedPDF
-   * runtime in here. Matches PdfAnnotationSubtype.HIGHLIGHT / .TEXT. */
-  const HIGHLIGHT_SUBTYPE = 9;
+   * runtime in here. Matches PdfAnnotationSubtype.TEXT / FREETEXT /
+   * HIGHLIGHT respectively. */
   const STICKY_SUBTYPE = 1;
+  const FREETEXT_SUBTYPE = 3;
+  const HIGHLIGHT_SUBTYPE = 9;
 
   interface AnnotationRow {
     id: string;
     pageIndex: number;            // 0-based
-    kind: "bookmark" | "highlight" | "sticky" | "other";
+    kind: "bookmark" | "highlight" | "sticky" | "freetext" | "other";
     color: string | null;
     excerpt: string;              // highlight only
-    comment: string;              // user note (custom.comment for highlights, contents for stickies)
+    comment: string;              // user note (custom.comment for highlights, contents for stickies + freetext)
     /** Page-coord midpoint of the rect — passed as `pageCoordinates` to
      *  scrollToPage so the annotation lands at viewport centre. */
     center: { x: number; y: number } | null;
@@ -121,6 +128,7 @@
         const kind: AnnotationRow["kind"] =
           isBookmark ? "bookmark" :
           a.type === HIGHLIGHT_SUBTYPE ? "highlight" :
+          a.type === FREETEXT_SUBTYPE ? "freetext" :
           a.type === STICKY_SUBTYPE ? "sticky" : "other";
         const contentsStr = typeof a.contents === "string" ? a.contents : "";
         const customComment =
@@ -134,17 +142,17 @@
           kind,
           color: kind === "highlight" ? color : null,
           excerpt: kind === "highlight" ? contentsStr : "",
-          comment: kind === "sticky" ? contentsStr : customComment,
+          /* For sticky notes AND free-text boxes, `contents` IS the note
+           * body. For highlights, the freeform comment lives under
+           * custom.comment. */
+          comment: (kind === "sticky" || kind === "freetext") ? contentsStr : customComment,
           center,
         });
       }
-      /* Bookmark always sorts to the top so it's easy to find; then by
-       * page number ascending. */
-      rows.sort((x, y) => {
-        if (x.kind === "bookmark" && y.kind !== "bookmark") return -1;
-        if (y.kind === "bookmark" && x.kind !== "bookmark") return 1;
-        return x.pageIndex - y.pageIndex;
-      });
+      /* Sort by page number ascending. The bookmark is split out into
+       * its own dedicated row above the view-toggle (see `bookmark`
+       * derived below), so it doesn't need a special position here. */
+      rows.sort((x, y) => x.pageIndex - y.pageIndex);
       annotationRows = rows;
       annotationsLoadError = null;
     } catch (e) {
@@ -179,6 +187,28 @@
   }
   function onAnnotationRowDblClick(row: AnnotationRow): void {
     navigateTo(row, { open: true });
+  }
+
+  /* The bookmark gets its own row above the EDIT/PREVIEW/ANNOTATIONS
+   * toggle — easier to find than buried in the annotations list, and
+   * "p.X/N + move here + jump" is small enough to live as a permanent
+   * status strip. Splits out of `annotationRows` so it doesn't appear
+   * twice. Total-pages reads from pdfNavState.documentMeta (published
+   * by the open PDF's toolbar). */
+  const bookmarkRow = $derived(annotationRows.find((r) => r.kind === "bookmark") ?? null);
+  const annotationRowsNoBookmark = $derived(
+    annotationRows.filter((r) => r.kind !== "bookmark"),
+  );
+  const totalPagesForBookmark = $derived(
+    pdfNavState.documentMeta[citekey]?.totalPages ?? 0,
+  );
+
+  function onBookmarkJump(): void {
+    if (!bookmarkRow) return;
+    onAnnotationRowClick(bookmarkRow);
+  }
+  function onBookmarkMoveHere(): void {
+    requestBookmarkMove(citekey);
   }
 
   marked.setOptions({ gfm: true, breaks: false });
@@ -740,12 +770,35 @@
     </header>
   {/if}
 
+  {#if !rawMode && bookmarkRow}
+    <div class="bookmark-bar" role="group" aria-label="Bookmark">
+      <span class="bm-icon" aria-hidden="true">📑</span>
+      <span class="bm-label">BOOKMARK</span>
+      <span class="bm-page">
+        p.{bookmarkRow.pageIndex + 1}{#if totalPagesForBookmark > 0}<span class="bm-page-total">/{totalPagesForBookmark}</span>{/if}
+      </span>
+      <span class="bm-sep" aria-hidden="true">—•—</span>
+      <button
+        type="button"
+        class="bm-action"
+        onclick={onBookmarkMoveHere}
+        title="Move the bookmark to where you are reading now"
+      >move here</button>
+      <button
+        type="button"
+        class="bm-action"
+        onclick={onBookmarkJump}
+        title="Scroll the PDF to the bookmark"
+      >jump</button>
+    </div>
+  {/if}
+
   {#if !rawMode}
     <div class="view-toggle">
       <button class:on={viewMode === "raw"} onclick={() => (viewMode = "raw")}>Edit</button>
       <button class:on={viewMode === "rendered"} onclick={() => (viewMode = "rendered")}>Preview</button>
       <button class:on={viewMode === "annotations"} onclick={() => (viewMode = "annotations")}>
-        Annotations{#if annotationRows.length > 0} <span class="count">{annotationRows.length}</span>{/if}
+        Annotations{#if annotationRowsNoBookmark.length > 0} <span class="count">{annotationRowsNoBookmark.length}</span>{/if}
       </button>
     </div>
   {/if}
@@ -761,10 +814,10 @@
       <div class="annotations-list">
         {#if annotationsLoadError}
           <div class="ann-error">Couldn't read annotation sidecar: {annotationsLoadError}</div>
-        {:else if annotationRows.length === 0}
+        {:else if annotationRowsNoBookmark.length === 0}
           <div class="ann-empty">No highlights or sticky notes yet. Select text or use the Annotate menu in the PDF.</div>
         {:else}
-          {#each annotationRows as row (row.id)}
+          {#each annotationRowsNoBookmark as row (row.id)}
             <button
               type="button"
               class="ann-row"
@@ -772,10 +825,10 @@
               ondblclick={() => onAnnotationRowDblClick(row)}
               title="Click to jump · double-click to open"
             >
-              {#if row.kind === "bookmark"}
-                <span class="ann-icon ann-icon-bookmark" aria-hidden="true">▮</span>
-              {:else if row.kind === "sticky"}
+              {#if row.kind === "sticky"}
                 <span class="ann-icon" aria-hidden="true">●</span>
+              {:else if row.kind === "freetext"}
+                <span class="ann-icon ann-icon-freetext" aria-hidden="true">T</span>
               {:else}
                 <span
                   class="ann-swatch"
@@ -785,9 +838,7 @@
               {/if}
               <span class="ann-page">p.{row.pageIndex + 1}</span>
               <span class="ann-body">
-                {#if row.kind === "bookmark"}
-                  <span class="ann-bookmark-label">Bookmark</span>
-                {:else if row.kind === "highlight"}
+                {#if row.kind === "highlight"}
                   {#if row.excerpt}
                     <span class="ann-excerpt">“{row.excerpt}”</span>
                   {:else}
@@ -796,11 +847,11 @@
                   {#if row.comment}
                     <span class="ann-comment">{row.comment}</span>
                   {/if}
-                {:else if row.kind === "sticky"}
+                {:else if row.kind === "sticky" || row.kind === "freetext"}
                   {#if row.comment}
                     <span class="ann-comment">{row.comment}</span>
                   {:else}
-                    <span class="ann-excerpt ann-excerpt-empty">(empty note)</span>
+                    <span class="ann-excerpt ann-excerpt-empty">(empty)</span>
                   {/if}
                 {:else}
                   {#if row.comment}<span class="ann-comment">{row.comment}</span>{/if}
@@ -1068,6 +1119,63 @@
     overflow: hidden;
   }
 
+  /* Bookmark bar — compact one-line summary above the view-toggle so
+     the bookmark is always visible regardless of which tab is active.
+     Layout matches the design mockup: icon + label + page + dotted
+     separator + move-here + jump. Reads like a status strip more
+     than a clickable list row. */
+  .bookmark-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 22px;
+    border-bottom: 1px solid var(--ink-12, rgba(26, 22, 18, 0.08));
+    background: var(--panel);
+    font-family: var(--sans);
+    font-size: 10.5px;
+    color: var(--ink-70, rgba(26, 22, 18, 0.7));
+  }
+  .bm-icon {
+    font-size: 13px;
+    line-height: 1;
+  }
+  .bm-label {
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--accent, #7a3a14);
+  }
+  .bm-page {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--ink, #1a1612);
+  }
+  .bm-page-total {
+    color: var(--ink-50, rgba(26, 22, 18, 0.5));
+  }
+  .bm-sep {
+    color: var(--ink-30, rgba(26, 22, 18, 0.3));
+    letter-spacing: 0;
+  }
+  .bm-action {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: lowercase;
+    color: var(--accent, #7a3a14);
+    cursor: pointer;
+  }
+  .bm-action:hover {
+    background: var(--hover, rgba(26, 22, 18, 0.05));
+  }
+
   /* Rendered/Raw toggle — direction-b.jsx: padding 14px 22px 10px, gap 14,
      Inter 10px 600, letter-spacing 1.2, uppercase. Active gets 1.5px
      accent border-bottom with paddingBottom 3. */
@@ -1171,17 +1279,11 @@
     font-size: 14px;
     line-height: 1;
   }
-  .ann-icon-bookmark {
-    color: var(--accent, #7a3a14);
-    font-size: 12px;
-  }
-  .ann-bookmark-label {
-    font-family: var(--sans);
-    font-size: 10.5px;
+  .ann-icon-freetext {
+    color: var(--ink, #1a1612);
+    font-family: var(--serif);
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    color: var(--accent, #7a3a14);
   }
   .ann-page {
     font-family: var(--sans);

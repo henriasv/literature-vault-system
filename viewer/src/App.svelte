@@ -18,7 +18,7 @@
     requestSearchFocus,
     requestPdfFindFocus,
   } from "./state/tabs.svelte";
-  import { prefsState, toggleLibrary } from "./state/prefs.svelte";
+  import { prefsState, toggleLibrary, toggleFocusMode } from "./state/prefs.svelte";
   import { dropAndFile, type FilingOutcome } from "./lib/vault";
   import { toast } from "./state/toast.svelte";
   import { makeKeymap } from "./lib/keymap";
@@ -97,6 +97,10 @@
     "Mod+W": { run: closeActiveTab, allowInEditableTargets: true },
     "Mod+Shift+W": { run: closeAllTabs, allowInEditableTargets: true },
     "Mod+\\": { run: toggleLibrary, allowInEditableTargets: true },
+    /* Escape is intentionally NOT bound to exit focus mode — that
+     * would steal Esc from in-PDF actions like deselecting the active
+     * annotation tool when the user is mid-annotation. ⌘⇧F is the
+     * sole toggle for focus mode. */
     "Mod+Alt+ArrowRight": { run: () => cycleTab(1), allowInEditableTargets: true },
     "Mod+Alt+ArrowLeft": { run: () => cycleTab(-1), allowInEditableTargets: true },
     "Mod+1": { run: () => jumpToTab(1), allowInEditableTargets: true },
@@ -120,7 +124,8 @@
        library, this opens the PDF find panel. ⌘⇧F is a hard escape that
        always opens PDF find, even from inside the editor. */
     "Mod+F": { run: requestPdfFindFocus },
-    "Mod+Shift+F": { run: requestPdfFindFocus, allowInEditableTargets: true },
+    /* Cmd+Shift+F — toggle focus / reading mode. */
+    "Mod+Shift+F": { run: () => void toggleFocusMode(), allowInEditableTargets: true },
     "/": { run: requestSearchFocus },
   });
 
@@ -385,15 +390,18 @@
     class:dragover={dragOver}
     class:lib-collapsed={prefsState.libraryCollapsed}
     class:coll-open={prefsState.collectionsPanelOpen}
+    class:focus={prefsState.focusMode}
   >
-    {#if !prefsState.libraryCollapsed}
+    {#if !prefsState.libraryCollapsed && !prefsState.focusMode}
       <div class="lib"><Library /></div>
     {/if}
     <div class="reader">
-      <TabBar />
+      {#if !prefsState.focusMode}
+        <TabBar />
+      {/if}
       <TabContent />
     </div>
-    {#if prefsState.collectionsPanelOpen}
+    {#if prefsState.collectionsPanelOpen && !prefsState.focusMode}
       <!-- Organize view is a full-window overlay so the same Reading /
            Organizing view-switch lands on the same screen (x, y) in both
            modes — and the library + reader (PDF, CodeMirror) stay mounted
@@ -438,6 +446,15 @@
   }
   main.lib-collapsed {
     grid-template-columns: 1fr;
+  }
+  /* Focus mode collapses everything to the reader and makes it span
+     the full window. The TabBar is hidden via {#if !focusMode}, so the
+     TabContent below it (PDF + notes split) takes full height. */
+  main.focus {
+    grid-template-columns: 1fr;
+  }
+  main.focus .reader {
+    grid-column: 1;
   }
   .lib {
     grid-column: 1;

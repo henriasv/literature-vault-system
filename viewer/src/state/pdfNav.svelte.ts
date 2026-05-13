@@ -36,16 +36,37 @@ interface FlashRequest {
   ts: number;
 }
 
+/** "Move the bookmark to wherever the user is currently reading." Triggered
+ *  from the right-pane bookmark bar (NoteEditor) and consumed by the
+ *  EmbedPdfToolbar mounted for that citekey, which knows the current
+ *  viewport position. */
+interface BookmarkMoveRequest {
+  citekey: string;
+  ts: number;
+}
+
+interface DocMeta {
+  totalPages: number;
+}
+
 interface PdfNavState {
   pendingJump: JumpRequest | null;
   flash: FlashRequest | null;
   sidecarVersion: number;
+  pendingBookmarkMove: BookmarkMoveRequest | null;
+  /** Per-citekey doc metadata published by the toolbar once a PDF is open.
+   *  The right pane reads this so the bookmark bar can show "p.4/7" even
+   *  when it isn't the component that loaded the PDF. Stale-but-harmless
+   *  if a PDF is later swapped out — re-populated on next open. */
+  documentMeta: Record<string, DocMeta>;
 }
 
 export const pdfNavState = $state<PdfNavState>({
   pendingJump: null,
   flash: null,
   sidecarVersion: 0,
+  pendingBookmarkMove: null,
+  documentMeta: {},
 });
 
 export interface JumpOptions {
@@ -85,4 +106,20 @@ export function requestFlash(citekey: string, annotationId: string): void {
 
 export function bumpSidecarVersion(): void {
   pdfNavState.sidecarVersion++;
+}
+
+export function requestBookmarkMove(citekey: string): void {
+  pdfNavState.pendingBookmarkMove = { citekey, ts: Date.now() };
+}
+
+export function consumeBookmarkMove(): void {
+  pdfNavState.pendingBookmarkMove = null;
+}
+
+export function setDocumentTotalPages(citekey: string, totalPages: number): void {
+  /* Mutate-in-place rather than replacing the record so callers that
+   * touched the proxy for other citekeys don't see spurious invalidation. */
+  const existing = pdfNavState.documentMeta[citekey];
+  if (existing && existing.totalPages === totalPages) return;
+  pdfNavState.documentMeta = { ...pdfNavState.documentMeta, [citekey]: { totalPages } };
 }
