@@ -64,19 +64,11 @@
    * consuming an old request and jumping the bookmark to page 1. */
   $effect(() => {
     const req = pdfNavState.pendingBookmarkMove;
-    if (!req) return;
-    if (req.citekey !== citekey) {
-      console.debug("[bookmark] request for different citekey, ignoring", {
-        requested: req.citekey, ours: citekey,
-      });
-      return;
-    }
+    if (!req || req.citekey !== citekey) return;
     if (Date.now() - req.ts > 2000) {
-      console.debug("[bookmark] request stale, dropping", { age: Date.now() - req.ts });
       consumeBookmarkMove();
       return;
     }
-    console.debug("[bookmark] handling request", { citekey });
     untrack(() => {
       setOrMoveBookmark();
       consumeBookmarkMove();
@@ -208,12 +200,7 @@
   function setOrMoveBookmark() {
     const provides = annotation.provides;
     const sp = scroll.provides;
-    if (!provides || !sp) {
-      console.warn("[bookmark] set/move aborted — plugin capability missing", {
-        provides: !!provides, scroll: !!sp,
-      });
-      return;
-    }
+    if (!provides || !sp) return;
     /* Pick the most-visible page and the page-coord midpoint of its
      * visible window — that's "where I'm currently reading".
      *
@@ -247,9 +234,6 @@
       cx = BOOKMARK_SIZE / 2;
       cy = BOOKMARK_SIZE / 2;
     }
-    console.debug("[bookmark] set/move", {
-      citekey, current, hasPageVis: !!pageVis, cx, cy,
-    });
     const rect = {
       origin: { x: cx - BOOKMARK_SIZE / 2, y: cy - BOOKMARK_SIZE / 2 },
       size: { width: BOOKMARK_SIZE, height: BOOKMARK_SIZE },
@@ -263,7 +247,6 @@
     const existing = bookmark;
     if (existing) {
       provides.deleteAnnotation(existing.pageIndex, existing.id);
-      console.debug("[bookmark] deleted existing", existing);
     }
     const newId = crypto.randomUUID();
     provides.createAnnotation(current - 1, {
@@ -281,19 +264,6 @@
       contents: "",
       custom: { bookmark: true },
     } as Parameters<typeof provides.createAnnotation>[1]);
-    /* Sanity-check: did the plugin actually accept the annotation?
-     * Logs to console so the user can paste the result if the bar
-     * still doesn't update. */
-    queueMicrotask(() => {
-      const all = provides.getAnnotations();
-      const found = all.find((t) => {
-        const o = t.object as { id?: string; custom?: { bookmark?: boolean } };
-        return o.id === newId && o.custom?.bookmark === true;
-      });
-      console.debug("[bookmark] post-create lookup", {
-        newId, found: !!found, totalAnnotations: all.length,
-      });
-    });
   }
 
   const search = useSearch(() => documentId);

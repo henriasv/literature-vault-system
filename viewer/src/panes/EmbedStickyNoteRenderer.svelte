@@ -68,13 +68,10 @@
   /* "Loose" drag: keep pointer-events auto even when selected so the
    * framework's clamped drag-surface never fires — our
    * `moveAnnotation('delta')` handler doesn't clamp, so the user can
-   * fling the sticky onto the recess or onto a neighbouring page. We
-   * reparent on drag end (see onPointerUp).
-   *
-   * Bookmark is invisible on the page (lives only in the right-pane
-   * bookmark bar) and must not catch pointer events. */
-  const pointerEvents = $derived(isBookmark ? "none" : onClick ? "auto" : "none");
-  const cursor = $derived(isBookmark ? "default" : onClick ? "move" : "default");
+   * fling the sticky (or bookmark) onto the recess or onto a
+   * neighbouring page. We reparent on drag end (see onPointerUp). */
+  const pointerEvents = $derived(onClick ? "auto" : "none");
+  const cursor = $derived(onClick ? "move" : "default");
 
   /* Contrast-derived stroke colour for the line glyphs inside the icon. */
   const lineColor = $derived.by(() => {
@@ -193,12 +190,28 @@
 >
   {#if !appearanceActive}
     {#if isBookmark}
-      <!-- The bookmark is no longer rendered on the page itself — it
-           lives exclusively in the right-pane bookmark bar
-           (between the paper frontmatter and the EDIT/PREVIEW/
-           ANNOTATIONS toggle). The annotation object still exists in
-           the sidecar so we know which page it points at, but no PDF
-           visual and no pointer-events surface here. -->
+      <!-- Ribbon-style bookmark icon: a rectangle with a notch cut out
+           of the bottom. Same 20×20 viewBox as the sticky shape so
+           the icon visually matches its rect. The bookmark IS shown
+           on the page (so the user can see where they bookmarked
+           and drag it to move) — the right-pane bookmark bar is the
+           CONTROL surface (set / jump), the page icon is the
+           ANCHOR. -->
+      <svg
+        viewBox="0 0 20 20"
+        width="100%"
+        height="100%"
+        style="position: absolute; inset: 0; pointer-events: none;"
+      >
+        <path
+          d="M 4 1 L 16 1 L 16 18 L 10 14 L 4 18 Z"
+          stroke-width="1"
+          stroke-linejoin="miter"
+          fill={color}
+          {opacity}
+          stroke="#1a1612"
+        />
+      </svg>
     {:else}
       <svg
         viewBox="0 0 20 20"
