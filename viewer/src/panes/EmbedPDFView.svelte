@@ -288,7 +288,7 @@
                        instance — it stores the per-type renderer map (Highlight,
                        Underline, …) that <Annotations> reads from. -->
                   <RendererRegistryProvider>
-                    <EmbedAnnotationKeybinds />
+                    <EmbedAnnotationKeybinds documentId={activeDocumentId} />
                     <GlobalPointerProvider documentId={activeDocumentId}>
                       <Viewport class="ep-viewport" documentId={activeDocumentId}>
                         <ZoomGestureWrapper documentId={activeDocumentId}>
