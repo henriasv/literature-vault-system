@@ -822,19 +822,21 @@
      all symmetric SVGs so they don't need any rotation. */
   .ep-toolbar-wrap.focus .annotate-row {
     writing-mode: horizontal-tb;
-    /* Match the main toolbar's traffic-light clearance (the
-     * annotate-row sits to the right of the main strip and would
-     * otherwise have its first tool overlap the green dot). */
-    top: 36px;
+    /* Panel itself reaches the top of the window so its background
+     * is flush with the main strip's. Traffic-light clearance is
+     * baked into the panel's own padding-top instead — that pushes
+     * the icons down to a comfortable line below the dots without
+     * leaving a strip of bare recess above the panel. */
+    top: 0;
     left: 100%;
     right: auto;
     bottom: auto;
     width: auto;
-    height: calc(100% - 36px);
+    height: 100%;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 8px 6px;
+    padding: 36px 6px 8px;
     border-bottom: 0;
     border-right: 1px solid var(--ink-12, rgba(26, 22, 18, 0.12));
   }
@@ -854,16 +856,19 @@
     line-height: 1.25;
   }
   /* Find popout keeps horizontal writing-mode — it has a text input
-     that doesn't fit a rotated layout. Anchor it to the right of the
-     strip, below the traffic-light clearance. */
+     that doesn't fit a rotated layout. Anchor at the top of the
+     strip; padding-top reserves the traffic-light clearance so the
+     input doesn't sit under the dots while the panel itself still
+     reaches the top of the window. */
   .ep-toolbar-wrap.focus .find-row {
     writing-mode: horizontal-tb;
-    top: 36px;
+    top: 0;
     left: 100%;
     right: auto;
     bottom: auto;
     width: 320px;
     height: auto;
+    padding-top: 36px;
     border-bottom: 1px solid var(--ink-12, rgba(26, 22, 18, 0.12));
     border-right: 1px solid var(--ink-12, rgba(26, 22, 18, 0.12));
   }
