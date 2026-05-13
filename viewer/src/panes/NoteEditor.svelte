@@ -238,15 +238,39 @@
   let exportResult = $state<{ output: string; annotations: number } | null>(null);
   let exportError = $state<string | null>(null);
   let exportDismissTimer: number | null = null;
-  /* Layout dropdown anchored under the Export PDF button. Opens on
-   * click, closes when the user picks a mode (which kicks off the
-   * export) or clicks outside.
-   *   'appendix' — note at front, badges on pages, numbered list at end
-   *   'margin'   — note at front, each page widened with a Word-review-
-   *                style comment column on the right */
+  /* Split-button state.
+   *   - left half ("Export PDF") executes the export with the
+   *     currently-selected layout, opening the save dialog
+   *   - right half (caret) opens the layout menu, which sets the
+   *     persistent selection (kept in localStorage so the user's
+   *     preferred layout survives reloads)
+   *
+   * Two layouts:
+   *   'margin'   — each page widened with a Word-review-style comment
+   *                column on the right
+   *   'appendix' — badges on the pages, numbered comment list as a
+   *                tail appendix */
+  type ExportMode = "appendix" | "margin";
+  const EXPORT_MODE_KEY = "lv.exportMode";
   let exportMenuOpen = $state(false);
   let exportWrapEl = $state<HTMLDivElement | undefined>();
-  type ExportMode = "appendix" | "margin";
+  let exportMode = $state<ExportMode>(
+    (typeof localStorage !== "undefined"
+      ? (localStorage.getItem(EXPORT_MODE_KEY) as ExportMode | null)
+      : null) || "margin",
+  );
+  function selectExportMode(m: ExportMode): void {
+    exportMode = m;
+    exportMenuOpen = false;
+    try {
+      localStorage.setItem(EXPORT_MODE_KEY, m);
+    } catch {
+      /* private-mode / quota-exceeded — non-fatal, just won't persist */
+    }
+  }
+  const exportModeLabel = $derived(
+    exportMode === "margin" ? "In margin" : "Attached after document",
+  );
   $effect(() => {
     if (!exportMenuOpen) return;
     function onDocClick(e: MouseEvent) {
@@ -931,33 +955,50 @@
       <span class="vt-grow"></span>
       <div class="export-wrap" bind:this={exportWrapEl} class:open={exportMenuOpen}>
         <button
-          class="vt-export"
+          class="vt-export se-action"
+          onclick={() => exportAnnotatedPdf(exportMode)}
+          disabled={exporting}
+          title={`Export annotated PDF — annotation comments ${exportModeLabel.toLowerCase()}`}
+        >{exporting ? "Exporting…" : "Export PDF"}</button>
+        <button
+          class="vt-export se-toggle"
           onclick={() => (exportMenuOpen = !exportMenuOpen)}
           disabled={exporting}
-          title="Export an annotated PDF — pick a layout"
           aria-haspopup="menu"
           aria-expanded={exportMenuOpen}
-        >{exporting ? "Exporting…" : "Export PDF"}<span class="vt-export-caret" aria-hidden="true">▾</span></button>
+          aria-label={`Change layout — currently ${exportModeLabel}`}
+          title={`Layout: ${exportModeLabel} — click to change`}
+        ><span class="vt-export-caret" aria-hidden="true">▾</span></button>
         {#if exportMenuOpen}
           <div class="export-menu" role="menu">
             <div class="export-menu-heading">Annotation comments</div>
             <button
               type="button"
-              role="menuitem"
+              role="menuitemradio"
+              aria-checked={exportMode === "margin"}
               class="export-menu-item"
-              onclick={() => exportAnnotatedPdf("margin")}
+              class:selected={exportMode === "margin"}
+              onclick={() => selectExportMode("margin")}
             >
-              <span class="emi-title">In margin</span>
-              <span class="emi-desc">Each page widened with a Word-review-style comment column on the right</span>
+              <span class="emi-check" aria-hidden="true">{exportMode === "margin" ? "●" : ""}</span>
+              <span class="emi-text">
+                <span class="emi-title">In margin</span>
+                <span class="emi-desc">Each page widened with a Word-review-style comment column on the right</span>
+              </span>
             </button>
             <button
               type="button"
-              role="menuitem"
+              role="menuitemradio"
+              aria-checked={exportMode === "appendix"}
               class="export-menu-item"
-              onclick={() => exportAnnotatedPdf("appendix")}
+              class:selected={exportMode === "appendix"}
+              onclick={() => selectExportMode("appendix")}
             >
-              <span class="emi-title">Attached after document</span>
-              <span class="emi-desc">Badges on the pages, numbered comment list as a tail appendix</span>
+              <span class="emi-check" aria-hidden="true">{exportMode === "appendix" ? "●" : ""}</span>
+              <span class="emi-text">
+                <span class="emi-title">Attached after document</span>
+                <span class="emi-desc">Badges on the pages, numbered comment list as a tail appendix</span>
+              </span>
             </button>
           </div>
         {/if}
@@ -1385,16 +1426,37 @@
      when clicked; selecting a layout starts the export immediately
      (so two-clicks total: button → option). */
   .vt-grow { flex: 1; }
+  /* Split-button: action half + toggle half, joined edge-to-edge
+     with a thin separator between them. The whole wrap shares the
+     accent-outlined look of the original Export PDF button. */
   .export-wrap {
     position: relative;
     display: inline-flex;
+    align-items: stretch;
+  }
+  .view-toggle .se-action {
+    border-right: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .view-toggle .se-toggle {
+    border-left: 1px solid var(--accent, #7a3a14);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding: 3px 6px;
+    min-width: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .vt-export-caret {
-    margin-left: 6px;
     font-size: 9px;
-    opacity: 0.85;
+    line-height: 1;
   }
-  .export-wrap.open .vt-export {
+  /* When the menu is open, only the toggle half flips to the active
+     "filled" look so the user can still see the action half is its
+     own clickable target. */
+  .export-wrap.open .se-toggle {
     background: var(--accent, #7a3a14);
     color: var(--panel, #fff);
   }
@@ -1427,20 +1489,38 @@
     background: transparent;
     border: 0;
     text-align: left;
-    padding: 6px 10px;
+    padding: 6px 10px 6px 8px;
     border-radius: 3px;
     cursor: pointer;
     font: inherit;
     color: var(--ink, #1a1612);
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: flex-start;
+    gap: 6px;
     text-transform: none;
     letter-spacing: 0;
   }
   .export-menu-item:hover {
     background: var(--accent, #7a3a14);
     color: var(--panel, #fff);
+  }
+  .export-menu-item .emi-check {
+    flex: 0 0 12px;
+    width: 12px;
+    height: 16px;
+    line-height: 16px;
+    color: var(--accent, #7a3a14);
+    font-size: 12px;
+    text-align: center;
+  }
+  .export-menu-item:hover .emi-check {
+    color: var(--panel, #fff);
+  }
+  .export-menu-item .emi-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
   }
   .export-menu-item .emi-title {
     font-family: var(--sans);
@@ -1455,6 +1535,12 @@
   }
   .export-menu-item:hover .emi-desc {
     color: rgba(255, 255, 255, 0.85);
+  }
+  .export-menu-item.selected .emi-title {
+    color: var(--accent, #7a3a14);
+  }
+  .export-menu-item.selected:hover .emi-title {
+    color: var(--panel, #fff);
   }
   .view-toggle .vt-export {
     border: 1px solid var(--accent, #7a3a14);
