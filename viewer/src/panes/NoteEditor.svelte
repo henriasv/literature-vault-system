@@ -940,23 +940,24 @@
         >{exporting ? "Exporting…" : "Export PDF"}<span class="vt-export-caret" aria-hidden="true">▾</span></button>
         {#if exportMenuOpen}
           <div class="export-menu" role="menu">
-            <button
-              type="button"
-              role="menuitem"
-              class="export-menu-item"
-              onclick={() => exportAnnotatedPdf("appendix")}
-            >
-              <span class="emi-title">Annotations at end</span>
-              <span class="emi-desc">Note up front, badges on pages, numbered list at the back</span>
-            </button>
+            <div class="export-menu-heading">Annotation comments</div>
             <button
               type="button"
               role="menuitem"
               class="export-menu-item"
               onclick={() => exportAnnotatedPdf("margin")}
             >
-              <span class="emi-title">Comments in margin</span>
-              <span class="emi-desc">Each page widened with a Word-review-style comment column</span>
+              <span class="emi-title">In margin</span>
+              <span class="emi-desc">Each page widened with a Word-review-style comment column on the right</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              class="export-menu-item"
+              onclick={() => exportAnnotatedPdf("appendix")}
+            >
+              <span class="emi-title">Attached after document</span>
+              <span class="emi-desc">Badges on the pages, numbered comment list as a tail appendix</span>
             </button>
           </div>
         {/if}
@@ -1402,7 +1403,7 @@
     top: calc(100% + 4px);
     right: 0;
     z-index: 30;
-    min-width: 240px;
+    min-width: 260px;
     background: var(--panel, #fff);
     border: 1px solid var(--ink-12, rgba(26, 22, 18, 0.18));
     border-radius: 4px;
@@ -1411,6 +1412,15 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+  }
+  .export-menu-heading {
+    padding: 6px 10px 4px;
+    font-family: var(--sans);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink-50, rgba(26, 22, 18, 0.55));
   }
   .export-menu-item {
     appearance: none;

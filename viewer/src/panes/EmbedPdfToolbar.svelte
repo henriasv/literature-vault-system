@@ -202,13 +202,34 @@
     const sp = scroll.provides;
     if (!provides || !sp) return;
     /* Pick the most-visible page and the page-coord midpoint of its
-     * visible window — that's "where I'm currently reading". */
+     * visible window — that's "where I'm currently reading".
+     *
+     * Fallback: `pageVisibilityMetrics` is populated lazily by the
+     * scroll plugin (IntersectionObserver-driven). On a fresh PDF
+     * load where the user hasn't scrolled yet, the metrics array can
+     * be empty, which used to make this function silently no-op.
+     * That's the "click set here and nothing happens" symptom. We
+     * now fall back to `scroll.state.currentPage` (which is reliable
+     * after the doc loads) and place the bookmark rect at the page
+     * origin — the bookmark is invisible on the PDF page anyway
+     * (it lives only in the right-pane bar), so the rect's exact
+     * position doesn't matter, only its `pageIndex`. */
     const metrics = sp.getMetrics();
-    const current = metrics?.currentPage ?? 1;
+    const stateCurrent = scroll.state.currentPage ?? 1;
+    const current = metrics?.currentPage ?? stateCurrent;
     const pageVis = metrics?.pageVisibilityMetrics?.find((m) => m.pageNumber === current);
-    if (!pageVis) return;
-    const cx = pageVis.original.pageX + pageVis.original.visibleWidth / 2;
-    const cy = pageVis.original.pageY + pageVis.original.visibleHeight / 2;
+    let cx: number;
+    let cy: number;
+    if (pageVis) {
+      cx = pageVis.original.pageX + pageVis.original.visibleWidth / 2;
+      cy = pageVis.original.pageY + pageVis.original.visibleHeight / 2;
+    } else {
+      /* No visibility metrics yet — anchor at top-left of the page
+       * (page coords are top-origin in this plugin). The bookmark
+       * has no visual on the page so this is just bookkeeping. */
+      cx = BOOKMARK_SIZE / 2;
+      cy = BOOKMARK_SIZE / 2;
+    }
     const rect = {
       origin: { x: cx - BOOKMARK_SIZE / 2, y: cy - BOOKMARK_SIZE / 2 },
       size: { width: BOOKMARK_SIZE, height: BOOKMARK_SIZE },
