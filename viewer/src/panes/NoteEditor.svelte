@@ -1554,13 +1554,14 @@
   .export-menu-item.selected:hover .emi-title {
     color: var(--panel, #fff);
   }
+  /* Typography only — the border + radius live on .export-wrap so
+     both halves of the split-button share a single outline. Keeping
+     the accent border here was the bug that made the two halves
+     render as separate pills with a gap between them. */
   .view-toggle .vt-export {
-    border: 1px solid var(--accent, #7a3a14);
     color: var(--accent, #7a3a14);
     background: transparent;
     padding: 3px 8px;
-    border-bottom: 1px solid var(--accent, #7a3a14);
-    border-radius: 3px;
     font-family: var(--sans);
     font-size: 10px;
     font-weight: 600;
