@@ -1426,24 +1426,32 @@
      when clicked; selecting a layout starts the export immediately
      (so two-clicks total: button → option). */
   .vt-grow { flex: 1; }
-  /* Split-button: action half + toggle half, joined edge-to-edge
-     with a thin separator between them. The whole wrap shares the
-     accent-outlined look of the original Export PDF button. */
+  /* Split-button: the wrap is the visual "button"; the two child
+     <button>s share a single outer border on the wrap and only show
+     a thin internal divider between them. Hover/active states paint
+     one half at a time so the user can see which zone is clickable
+     without breaking the single-button silhouette. */
   .export-wrap {
     position: relative;
     display: inline-flex;
     align-items: stretch;
+    border: 1px solid var(--accent, #7a3a14);
+    border-radius: 3px;
+    overflow: hidden;  /* clip child backgrounds at the rounded corners */
   }
-  .view-toggle .se-action {
-    border-right: 0;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-  }
+  /* Child buttons drop their own borders + radii so only the wrap's
+     outline is visible. They keep their typography from .vt-export. */
+  .view-toggle .se-action,
   .view-toggle .se-toggle {
-    border-left: 1px solid var(--accent, #7a3a14);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    padding: 3px 6px;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+  /* The divider — a soft inset line on the toggle's left edge.
+     Subtle enough that the two halves still read as one surface. */
+  .view-toggle .se-toggle {
+    border-left: 1px solid rgba(122, 58, 20, 0.25);
+    padding: 3px 7px;
     min-width: 22px;
     display: inline-flex;
     align-items: center;
@@ -1453,12 +1461,16 @@
     font-size: 9px;
     line-height: 1;
   }
-  /* When the menu is open, only the toggle half flips to the active
-     "filled" look so the user can still see the action half is its
-     own clickable target. */
+  /* The wrap itself reacts to focus-within so a keyboard user gets a
+     single outline around the whole split-button. */
+  .export-wrap:focus-within {
+    box-shadow: 0 0 0 2px rgba(122, 58, 20, 0.22);
+  }
+  /* When the dropdown is open, the toggle half is the "active" zone. */
   .export-wrap.open .se-toggle {
     background: var(--accent, #7a3a14);
     color: var(--panel, #fff);
+    border-left-color: var(--accent, #7a3a14);
   }
   .export-menu {
     position: absolute;
