@@ -149,11 +149,50 @@ pub(crate) fn scripts_dir() -> PathBuf {
     vault_root().join("scripts")
 }
 
+/// Build an enriched PATH that prepends the bin directories
+/// Homebrew + user-local installers commonly use. macOS apps launched
+/// from Finder / Applications inherit only launchd's minimal default
+/// PATH (typically `/usr/bin:/bin:/usr/sbin:/sbin`), so `uv` /
+/// `python3` installed under `/opt/homebrew/bin` or `~/.local/bin`
+/// aren't found — that's the "drag-drop does nothing in production"
+/// symptom. Dev mode is unaffected because `npm run tauri dev`
+/// inherits the user's shell PATH.
+fn enriched_path() -> std::ffi::OsString {
+    let mut paths: Vec<PathBuf> = Vec::new();
+    // Apple Silicon Homebrew first; falls through to Intel Homebrew
+    // and user-local bins. Anything already in PATH appended after.
+    let candidates: [&str; 4] = [
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+        "/opt/homebrew/sbin",
+        "/usr/local/sbin",
+    ];
+    for p in candidates.iter() {
+        paths.push(PathBuf::from(p));
+    }
+    if let Some(home) = std::env::var_os("HOME") {
+        let home = PathBuf::from(&home);
+        paths.push(home.join(".local").join("bin"));
+        paths.push(home.join(".cargo").join("bin"));
+    }
+    if let Some(existing) = std::env::var_os("PATH") {
+        for p in std::env::split_paths(&existing) {
+            if !paths.contains(&p) {
+                paths.push(p);
+            }
+        }
+    }
+    std::env::join_paths(paths).unwrap_or_else(|_| {
+        std::env::var_os("PATH").unwrap_or_else(|| std::ffi::OsString::from(""))
+    })
+}
+
 pub(crate) fn run_script(script: &str, args: &[&str]) -> Result<String> {
     let script_path = scripts_dir().join(script);
     if !script_path.is_file() {
         return Err(anyhow!("script not found: {}", script_path.display()));
     }
+    let enriched = enriched_path();
     // Prefer `uv run` (handles PEP-723 inline deps automatically). Fall back
     // to plain `python3` if uv isn't on PATH; that requires pypdf to be in
     // whatever environment python3 resolves to.
@@ -165,6 +204,9 @@ pub(crate) fn run_script(script: &str, args: &[&str]) -> Result<String> {
         cmd.current_dir(vault_root());
         // Map vault root through env in case the script reads it.
         cmd.env("LITERATURE_VAULT_ROOT", vault_root());
+        // Enriched PATH so Finder-launched builds can still find
+        // /opt/homebrew/bin/uv etc.
+        cmd.env("PATH", &enriched);
         match cmd.output() {
             Ok(o) => Some(Ok(o)),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
@@ -499,6 +541,7 @@ pub fn inbox_file_with_bibtex(path: String, bibtex: String) -> Result<FilingOutc
     /* manual_file.py takes the BibTeX over stdin (--bibtex-file -) to
      * avoid shell-escaping headaches with multi-line content. */
     let script_path = scripts_dir().join("manual_file.py");
+    let enriched = enriched_path();
     let try_run = |program: &str, prefix: &[&str]| -> Option<std::io::Result<std::process::Output>> {
         let mut cmd = Command::new(program);
         for a in prefix {
@@ -509,6 +552,9 @@ pub fn inbox_file_with_bibtex(path: String, bibtex: String) -> Result<FilingOutc
         cmd.arg("--bibtex-file").arg("-");
         cmd.current_dir(vault_root());
         cmd.env("LITERATURE_VAULT_ROOT", vault_root());
+        // Match run_script's PATH treatment so Finder-launched builds
+        // find /opt/homebrew/bin/uv etc.
+        cmd.env("PATH", &enriched);
         cmd.stdin(std::process::Stdio::piped());
         cmd.stdout(std::process::Stdio::piped());
         cmd.stderr(std::process::Stdio::piped());
