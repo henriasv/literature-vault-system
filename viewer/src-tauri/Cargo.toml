@@ -34,4 +34,4 @@ thiserror = "1"
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", features = ["NSApplication", "NSMenu", "NSMenuItem", "NSResponder", "NSPrintInfo", "NSPrintOperation"] }
 objc2-foundation = { version = "0.3", features = ["NSString", "NSURL"] }
-objc2-pdf-kit = { version = "0.3", features = ["PDFDocument", "objc2-app-kit"] }
+objc2-pdf-kit = { version = "0.3", features = ["PDFDocument", "PDFPage", "objc2-app-kit"] }

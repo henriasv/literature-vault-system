@@ -52,6 +52,23 @@ pub fn print_pdf(path: String) -> Result<(), String> {
         let alloc = PDFDocument::alloc();
         let doc = PDFDocument::initWithURL(alloc, &url)
             .ok_or_else(|| format!("PDFDocument: could not open {path}"))?;
+        /* Many publisher PDFs embed link annotations on citations and
+         * cross-references with a *visible* border/colour appearance.
+         * PDFKit honours those during printing, so the printed page
+         * ends up with coloured boxes around every cite. Walking the
+         * pages and clearing `displaysAnnotations` on each one
+         * suppresses link rendering without mutating the underlying
+         * file. Our own highlights / shapes / notes are stored in the
+         * sidecar JSON (not embedded), so this only affects the
+         * publisher's own annotations; the annotated-print path goes
+         * through `export_annotated_pdf.py` which renders them as
+         * static graphics that PDFKit treats as page content. */
+        let count = doc.pageCount();
+        for i in 0..count {
+            if let Some(page) = doc.pageAtIndex(i) {
+                page.setDisplaysAnnotations(false);
+            }
+        }
         let info = NSPrintInfo::sharedPrintInfo();
         let op = doc
             .printOperationForPrintInfo_scalingMode_autoRotate(
