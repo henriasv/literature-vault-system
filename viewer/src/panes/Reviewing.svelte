@@ -23,6 +23,9 @@
     createReviewProjectFlow,
   } from "../state/review.svelte";
   import { dndState } from "../state/dnd.svelte";
+  import { openCtxMenu } from "../state/ctxmenu.svelte";
+  import { openReviewMetaSheet } from "../state/reviewMetaEdit.svelte";
+  import type { PaperMeta } from "../lib/vault";
   import ViewSwitch from "./ViewSwitch.svelte";
 
   onMount(() => {
@@ -84,6 +87,36 @@
    * with projects on the left instead of the library list). */
   function openPaper(citekey: string): void {
     openInTab(citekey);
+  }
+
+  /* Pull the trailing `<stem>` off a `review:<project>:<stem>` citekey
+   * for the rename-modal's source-name display. */
+  function stemOf(citekey: string): string {
+    const parts = citekey.split(":");
+    return parts[parts.length - 1] ?? citekey;
+  }
+
+  /* Right-click → Rename… on a review paper opens the same metadata
+   * sheet the post-drop flow uses, pre-filled with the paper's current
+   * title and authors. Saving writes back via `update_review_meta`. */
+  function onPaperContextMenu(e: MouseEvent, paper: PaperMeta): void {
+    e.preventDefault();
+    e.stopPropagation();
+    openCtxMenu(e.clientX, e.clientY, [
+      {
+        label: "Rename / edit metadata…",
+        onclick: () => {
+          openReviewMetaSheet([
+            {
+              citekey: paper.citekey,
+              sourceName: stemOf(paper.citekey),
+              title: paper.title ?? "",
+              authors: paper.authors.join(", "),
+            },
+          ]);
+        },
+      },
+    ]);
   }
 
   /* Drop-target highlight for the currently hovered review project,
@@ -173,7 +206,11 @@
         <div class="empty"><p class="hint">Drag PDFs onto this project to file them.</p></div>
       {:else}
         {#each reviewState.papers as p (p.citekey)}
-          <button class="paper-row" ondblclick={() => openPaper(p.citekey)} onclick={() => openPaper(p.citekey)}>
+          <button
+            class="paper-row"
+            ondblclick={() => openPaper(p.citekey)}
+            onclick={() => openPaper(p.citekey)}
+            oncontextmenu={(e) => onPaperContextMenu(e, p)}>
             <span class="title">{p.title || p.citekey}</span>
             {#if p.authors.length > 0}
               <span class="sub">{p.authors[0]}{p.authors.length > 1 ? " +" + (p.authors.length - 1) : ""}</span>
