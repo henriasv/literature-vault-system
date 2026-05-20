@@ -34,7 +34,7 @@ pub fn open_path_external(path: String) -> Result<(), String> {
 pub fn print_pdf(path: String) -> Result<(), String> {
     use objc2::rc::Retained;
     use objc2::AllocAnyThread;
-    use objc2_app_kit::NSPrintInfo;
+    use objc2_app_kit::{NSPrintInfo, NSPrintPanelOptions};
     use objc2_foundation::{MainThreadMarker, NSString, NSURL};
     use objc2_pdf_kit::{PDFDocument, PDFPrintScalingMode};
 
@@ -78,6 +78,20 @@ pub fn print_pdf(path: String) -> Result<(), String> {
                 mtm,
             )
             .ok_or_else(|| "PDFDocument: failed to build print operation".to_string())?;
+        /* Expand the print sheet to Preview's full set of controls:
+         * copies, page range, paper size, orientation, scaling, and a
+         * live preview pane. The default panel from PDFKit's print
+         * operation only surfaces copies + page range, which is why
+         * the user couldn't adjust scaling. */
+        let panel = op.printPanel();
+        panel.setOptions(
+            NSPrintPanelOptions::ShowsCopies
+                | NSPrintPanelOptions::ShowsPageRange
+                | NSPrintPanelOptions::ShowsPaperSize
+                | NSPrintPanelOptions::ShowsOrientation
+                | NSPrintPanelOptions::ShowsScaling
+                | NSPrintPanelOptions::ShowsPreview,
+        );
         op.runOperation();
     }
     Ok(())
