@@ -200,6 +200,47 @@ pub fn paper_notes_dir() -> PathBuf {
     vault_root().join("PaperNotes")
 }
 
+// --- Review-mode paths -----------------------------------------------------
+//
+// Review papers live in their own subtrees so they never appear in the main
+// library and never pollute library.bib. The synthetic citekey shape is
+// `review:<project>:<stem>` — the `:` separators are illegal in filenames so
+// they can't collide with library citekeys. All path-taking Tauri commands
+// (`read_note`, `pdf_path_for`, `read_annotations`, …) check for the prefix
+// via `parse_review_id` and route accordingly.
+
+pub fn review_notes_dir() -> PathBuf {
+    vault_root().join("ReviewNotes")
+}
+pub fn reviewing_pdfs_dir() -> PathBuf {
+    vault_root().join("PDFs").join("reviewing")
+}
+pub fn review_note_path(project: &str, stem: &str) -> PathBuf {
+    review_notes_dir().join(project).join(format!("{stem}.md"))
+}
+pub fn review_pdf_path(project: &str, stem: &str) -> PathBuf {
+    reviewing_pdfs_dir().join(project).join(format!("{stem}.pdf"))
+}
+/// Annotation sidecars all live in one flat `Annotations/` directory. Review
+/// papers get a sanitised name so the file lookup never touches the `review:`
+/// citekey shape (which contains `:`, harmless in filenames but ugly).
+pub fn review_annotation_path(project: &str, stem: &str) -> PathBuf {
+    vault_root()
+        .join("Annotations")
+        .join(format!("review-{project}-{stem}.json"))
+}
+
+/// Split a review citekey `review:<project>:<stem>` into its parts. Returns
+/// `None` for plain library citekeys.
+pub fn parse_review_id(id: &str) -> Option<(String, String)> {
+    let after = id.strip_prefix("review:")?;
+    let (project, stem) = after.split_once(':')?;
+    if project.is_empty() || stem.is_empty() {
+        return None;
+    }
+    Some((project.to_string(), stem.to_string()))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaperMeta {
@@ -329,16 +370,44 @@ pub fn list_papers() -> Result<Vec<PaperMeta>, String> {
 
 #[tauri::command]
 pub fn paper_meta(citekey: String) -> Result<PaperMeta, String> {
+    if let Some((project, stem)) = parse_review_id(&citekey) {
+        let result: Result<PaperMeta> = (|| {
+            let path = review_note_path(&project, &stem);
+            let contents = std::fs::read_to_string(&path)
+                .with_context(|| format!("read note {}", path.display()))?;
+            let fm = frontmatter::parse(&contents)
+                .with_context(|| format!("frontmatter in {}", path.display()))?;
+            let has_pdf = review_pdf_path(&project, &stem).is_file();
+            Ok(PaperMeta::from_frontmatter(fm, has_pdf))
+        })();
+        return err_to_string(result);
+    }
     err_to_string(paper_meta_impl(&citekey))
 }
 
 #[tauri::command]
 pub fn read_note(citekey: String) -> Result<String, String> {
+    if let Some((project, stem)) = parse_review_id(&citekey) {
+        let path = review_note_path(&project, &stem);
+        return std::fs::read_to_string(&path)
+            .map_err(|e| format!("read {}: {}", path.display(), e));
+    }
     err_to_string(read_note_impl(&citekey))
 }
 
 #[tauri::command]
 pub fn write_note(citekey: String, contents: String) -> Result<(), String> {
+    if let Some((project, stem)) = parse_review_id(&citekey) {
+        frontmatter::validate_required(&contents)
+            .map_err(|e| format!("frontmatter validation for {citekey}: {e:#}"))?;
+        let path = review_note_path(&project, &stem);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("mkdir {}: {}", parent.display(), e))?;
+        }
+        return atomic_write(&path, contents.as_bytes())
+            .map_err(|e| format!("write {}: {}", path.display(), e));
+    }
     err_to_string(write_note_impl(&citekey, &contents))
 }
 
@@ -384,6 +453,9 @@ pub fn read_bibtex(citekeys: Vec<String>) -> Result<String, String> {
 
 #[tauri::command]
 pub fn pdf_path_for(citekey: String) -> String {
+    if let Some((project, stem)) = parse_review_id(&citekey) {
+        return review_pdf_path(&project, &stem).to_string_lossy().into_owned();
+    }
     pdf_path(&citekey).to_string_lossy().into_owned()
 }
 
@@ -420,7 +492,11 @@ pub async fn reassign_with_doi(citekey: String, new_doi: String) -> Result<Strin
 /// string when no sidecar exists yet (a paper that's never been annotated).
 #[tauri::command]
 pub fn read_annotations(citekey: String) -> Result<String, String> {
-    let path = vault_root().join("Annotations").join(format!("{citekey}.json"));
+    let path = if let Some((project, stem)) = parse_review_id(&citekey) {
+        review_annotation_path(&project, &stem)
+    } else {
+        vault_root().join("Annotations").join(format!("{citekey}.json"))
+    };
     if !path.is_file() {
         return Ok(String::new());
     }
@@ -434,7 +510,11 @@ pub fn read_annotations(citekey: String) -> Result<String, String> {
 #[tauri::command]
 pub fn write_annotations(citekey: String, json: String) -> Result<(), String> {
     let dir = vault_root().join("Annotations");
-    let path = dir.join(format!("{citekey}.json"));
+    let path = if let Some((project, stem)) = parse_review_id(&citekey) {
+        review_annotation_path(&project, &stem)
+    } else {
+        dir.join(format!("{citekey}.json"))
+    };
     let trimmed = json.trim();
     // Clear sidecar entirely on empty (or "[]") — keeps the vault tidy.
     if trimmed.is_empty() || trimmed == "[]" {
@@ -486,6 +566,113 @@ pub async fn reassign_with_bibtex(
     .await
     .map_err(|e| format!("reassign_with_bibtex task: {e}"))??;
     Ok(out)
+}
+
+// -------- Review-mode listing + project creation -----------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReviewProject {
+    pub slug: String,
+    pub paper_count: u32,
+}
+
+#[tauri::command]
+pub fn list_review_projects() -> Result<Vec<ReviewProject>, String> {
+    let dir = review_notes_dir();
+    if !dir.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut out = Vec::new();
+    for entry in std::fs::read_dir(&dir).map_err(|e| format!("read_dir {}: {e}", dir.display()))? {
+        let entry = entry.map_err(|e| format!("entry: {e}"))?;
+        let p = entry.path();
+        if !p.is_dir() {
+            continue;
+        }
+        let slug = match p.file_name().and_then(|n| n.to_str()) {
+            Some(s) => s.to_string(),
+            None => continue,
+        };
+        let mut count = 0u32;
+        if let Ok(read) = std::fs::read_dir(&p) {
+            for e2 in read.flatten() {
+                if e2.path().extension().and_then(|s| s.to_str()) == Some("md") {
+                    count += 1;
+                }
+            }
+        }
+        out.push(ReviewProject { slug, paper_count: count });
+    }
+    out.sort_by(|a, b| a.slug.cmp(&b.slug));
+    Ok(out)
+}
+
+#[tauri::command]
+pub fn list_review_papers(project: String) -> Result<Vec<PaperMeta>, String> {
+    let dir = review_notes_dir().join(&project);
+    if !dir.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut papers = Vec::new();
+    let mut errors = 0usize;
+    for entry in std::fs::read_dir(&dir).map_err(|e| format!("read_dir {}: {e}", dir.display()))? {
+        let entry = entry.map_err(|e| format!("entry: {e}"))?;
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) != Some("md") {
+            continue;
+        }
+        let stem = match path.file_stem().and_then(|s| s.to_str()) {
+            Some(s) => s.to_string(),
+            None => continue,
+        };
+        let loaded: Result<PaperMeta> = (|| {
+            let contents = std::fs::read_to_string(&path)
+                .with_context(|| format!("read note {}", path.display()))?;
+            let fm = frontmatter::parse(&contents)
+                .with_context(|| format!("frontmatter in {}", path.display()))?;
+            let has_pdf = review_pdf_path(&project, &stem).is_file();
+            Ok(PaperMeta::from_frontmatter(fm, has_pdf))
+        })();
+        match loaded {
+            Ok(meta) => papers.push(meta),
+            Err(e) => {
+                errors += 1;
+                eprintln!("[vault] skip review {}: {:#}", path.display(), e);
+            }
+        }
+    }
+    if errors > 0 {
+        eprintln!("[vault] loaded {} review papers ({} skipped)", papers.len(), errors);
+    }
+    papers.sort_by(|a, b| b.added.cmp(&a.added));
+    Ok(papers)
+}
+
+/// Validate a project slug is filesystem-safe. Reject path separators, NULs,
+/// dotfiles, and obvious whitespace traps.
+fn sanitize_project_slug(slug: &str) -> Result<String> {
+    let trimmed = slug.trim();
+    if trimmed.is_empty() {
+        anyhow::bail!("project slug must not be empty");
+    }
+    if trimmed.contains('/') || trimmed.contains('\\') || trimmed.contains('\0') {
+        anyhow::bail!("project slug must not contain path separators");
+    }
+    if trimmed.starts_with('.') {
+        anyhow::bail!("project slug must not start with a dot");
+    }
+    Ok(trimmed.to_string())
+}
+
+#[tauri::command]
+pub fn create_review_project(slug: String) -> Result<String, String> {
+    let safe = sanitize_project_slug(&slug).map_err(|e| format!("invalid slug: {e:#}"))?;
+    std::fs::create_dir_all(review_notes_dir().join(&safe))
+        .map_err(|e| format!("mkdir ReviewNotes/{}: {}", safe, e))?;
+    std::fs::create_dir_all(reviewing_pdfs_dir().join(&safe))
+        .map_err(|e| format!("mkdir PDFs/reviewing/{}: {}", safe, e))?;
+    Ok(safe)
 }
 
 /// Same path as `vault_root_path` but with the user's home directory replaced

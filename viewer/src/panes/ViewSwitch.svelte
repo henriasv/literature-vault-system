@@ -1,21 +1,22 @@
 <script lang="ts">
   /**
-   * Anchored Reading / Organizing segmented control.
+   * Anchored Reading / Organizing / Reviewing segmented control.
    *
-   * Lives at the very top-left of both the reading view (above the library
-   * pane) and the organize view (above the collections tree). The DOM is
-   * positioned identically in both — same height (28px), same padding, same
-   * gap from the traffic-light placeholder — so the cursor lands on the same
-   * (x, y) regardless of which view is active. Clicking the inactive segment
-   * toggles `prefsState.collectionsPanelOpen`.
+   * Lives at the very top-left of every view (above the library pane in
+   * reading, above the collections tree in organizing, above the project
+   * tree in reviewing). The DOM is positioned identically in all three —
+   * same height (28px), same padding, same gap from the traffic-light
+   * placeholder — so the cursor lands on the same (x, y) regardless of
+   * which view is active.
    */
-  import { prefsState } from "../state/prefs.svelte";
+  import { prefsState, type ViewMode } from "../state/prefs.svelte";
 
-  type Mode = "reading" | "organize";
-  let { active }: { active: Mode } = $props();
+  let { active }: { active: ViewMode } = $props();
 
-  function flip() {
-    prefsState.collectionsPanelOpen = !prefsState.collectionsPanelOpen;
+  function go(mode: ViewMode) {
+    if (prefsState.viewMode !== mode) {
+      prefsState.viewMode = mode;
+    }
   }
 </script>
 
@@ -25,15 +26,22 @@
     class:on={active === "reading"}
     role="tab"
     aria-selected={active === "reading"}
-    onclick={() => active === "organize" && flip()}
+    onclick={() => go("reading")}
     title="Reading view (PDF + notes)">Reading</button>
   <button
     class="seg"
     class:on={active === "organize"}
     role="tab"
     aria-selected={active === "organize"}
-    onclick={() => active === "reading" && flip()}
+    onclick={() => go("organize")}
     title="Organizing view (collections + library)">Organizing</button>
+  <button
+    class="seg"
+    class:on={active === "review"}
+    role="tab"
+    aria-selected={active === "review"}
+    onclick={() => go("review")}
+    title="Reviewing view (grade student work)">Reviewing</button>
 </div>
 
 <style>
@@ -46,7 +54,7 @@
     flex-shrink: 0;
   }
   .seg {
-    padding: 0 14px;
+    padding: 0 12px;
     background: transparent;
     color: var(--ink-70);
     border: 0;
@@ -57,7 +65,7 @@
     letter-spacing: 1.5px;
     text-transform: uppercase;
     cursor: pointer;
-    min-width: 92px;
+    min-width: 82px;
   }
   .seg.on {
     background: var(--ink);

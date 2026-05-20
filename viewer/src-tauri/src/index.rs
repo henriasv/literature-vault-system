@@ -7,7 +7,7 @@ use notify_debouncer_mini::{new_debouncer, DebounceEventResult, Debouncer};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::vault::{index_json, paper_notes_dir, vault_root};
+use crate::vault::{index_json, paper_notes_dir, review_notes_dir, vault_root};
 
 /// Held by Tauri's managed state so the debouncer thread stays alive for the
 /// lifetime of the app. Dropping it stops the watcher.
@@ -28,6 +28,7 @@ pub fn start_watcher(app: &AppHandle) -> Result<IndexWatcher> {
     let index_target = index_json();
     let vault = vault_root();
     let notes_dir = paper_notes_dir();
+    let review_dir = review_notes_dir();
     let handle = app.clone();
 
     let (tx, rx) = mpsc::channel::<DebounceEventResult>();
@@ -45,11 +46,22 @@ pub fn start_watcher(app: &AppHandle) -> Result<IndexWatcher> {
             .watch(&notes_dir, RecursiveMode::NonRecursive)
             .with_context(|| format!("watch {}", notes_dir.display()))?;
     }
+    /* ReviewNotes/ uses a recursive watch because projects are sub-
+     * directories and notes live one level deeper than PaperNotes/. The
+     * project tree can grow at any time (new projects, new student
+     * papers), so we want to pick up creates anywhere under the tree. */
+    if review_dir.is_dir() {
+        debouncer
+            .watcher()
+            .watch(&review_dir, RecursiveMode::Recursive)
+            .with_context(|| format!("watch {}", review_dir.display()))?;
+    }
 
     std::thread::spawn(move || {
         while let Ok(res) = rx.recv() {
             let Ok(events) = res else { continue };
             let mut library_hit = false;
+            let mut review_hit = false;
             let mut notes_hit: Vec<String> = Vec::new();
             for ev in events {
                 if ev.path == index_target {
@@ -67,10 +79,15 @@ pub fn start_watcher(app: &AppHandle) -> Result<IndexWatcher> {
                             notes_hit.push(citekey);
                         }
                     }
+                } else if ev.path.starts_with(&review_dir) {
+                    review_hit = true;
                 }
             }
             if library_hit {
                 let _ = handle.emit("library:changed", ());
+            }
+            if review_hit {
+                let _ = handle.emit("review:changed", ());
             }
             for citekey in notes_hit {
                 let _ = handle.emit("note:changed", NoteChanged { citekey });

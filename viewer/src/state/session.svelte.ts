@@ -18,7 +18,11 @@ interface PersistedSession {
   splitRatio: number;
   libraryCollapsed: boolean;
   libraryWidth: number;
-  collectionsPanelOpen: boolean;
+  /** Newer field. Older sessions persisted `collectionsPanelOpen` (boolean);
+   *  the loader below migrates the legacy field to `viewMode` on the next save. */
+  viewMode?: "reading" | "organize" | "review";
+  /** Deprecated. Read for migration only; never written by the current code. */
+  collectionsPanelOpen?: boolean;
   collectionsPanelWidth: number;
   /** May arrive as legacy `string[]` from older session.json — normalized via
    *  `normalizeRecents` on load. */
@@ -112,7 +116,7 @@ export function scheduleSessionSave(): void {
       splitRatio: prefsState.splitRatio,
       libraryCollapsed: prefsState.libraryCollapsed,
       libraryWidth: prefsState.libraryWidth,
-      collectionsPanelOpen: prefsState.collectionsPanelOpen,
+      viewMode: prefsState.viewMode,
       collectionsPanelWidth: prefsState.collectionsPanelWidth,
       recents: prefsState.recents,
     };
@@ -133,8 +137,12 @@ export async function bootstrapSession(): Promise<void> {
       if (typeof parsed.libraryCollapsed === "boolean")
         prefsState.libraryCollapsed = parsed.libraryCollapsed;
       if (typeof parsed.libraryWidth === "number") prefsState.libraryWidth = parsed.libraryWidth;
-      if (typeof parsed.collectionsPanelOpen === "boolean")
-        prefsState.collectionsPanelOpen = parsed.collectionsPanelOpen;
+      /* Modern field wins; otherwise migrate from the legacy boolean. */
+      if (parsed.viewMode === "reading" || parsed.viewMode === "organize" || parsed.viewMode === "review") {
+        prefsState.viewMode = parsed.viewMode;
+      } else if (parsed.collectionsPanelOpen === true) {
+        prefsState.viewMode = "organize";
+      }
       if (typeof parsed.collectionsPanelWidth === "number")
         prefsState.collectionsPanelWidth = parsed.collectionsPanelWidth;
       if (Array.isArray(parsed.recents)) prefsState.recents = normalizeRecents(parsed.recents);
@@ -191,7 +199,7 @@ export function setupAutoSave(): () => void {
       void prefsState.splitRatio;
       void prefsState.libraryCollapsed;
       void prefsState.libraryWidth;
-      void prefsState.collectionsPanelOpen;
+      void prefsState.viewMode;
       void prefsState.collectionsPanelWidth;
       void prefsState.recents.length;
       // Track tabs structurally: count + each citekey + each preview

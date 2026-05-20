@@ -151,6 +151,25 @@ export async function dropAndFile(pdfPaths: string[]): Promise<FilingOutcome[]> 
   return await invoke<FilingOutcome[]>("drop_and_file", { pdfPaths });
 }
 
+/** One PDF filed into a review project (student-work grading flow). The
+ *  Rust side copies the PDF to `PDFs/reviewing/<project>/<stem>.pdf` and
+ *  creates a minimal `ReviewNotes/<project>/<stem>.md` with @studentwork
+ *  frontmatter. No DOI / CrossRef lookup, no library.bib mutation. */
+export interface ReviewFilingOutcome {
+  /** `review:<project>:<stem>` on success, empty on error. */
+  citekey: string;
+  status: "filed" | "error";
+  detail?: string | null;
+  sourceName: string;
+}
+
+export async function dropToReviewProject(
+  pdfPaths: string[],
+  project: string,
+): Promise<ReviewFilingOutcome[]> {
+  return await invoke<ReviewFilingOutcome[]>("drop_to_review_project", { pdfPaths, project });
+}
+
 /** One PDF currently sitting in `Inbox/`. Files with the same DOI as
  *  an already-filed paper end up here too (the dedup check refuses to
  *  clobber); files without an extractable DOI/arXiv stay here until a

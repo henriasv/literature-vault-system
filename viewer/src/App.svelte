@@ -20,11 +20,13 @@
     requestPdfFindFocus,
   } from "./state/tabs.svelte";
   import { prefsState, toggleLibrary, toggleFocusMode } from "./state/prefs.svelte";
-  import { dropAndFile, type FilingOutcome } from "./lib/vault";
+  import { dropAndFile, dropToReviewProject, type FilingOutcome } from "./lib/vault";
   import { toast } from "./state/toast.svelte";
   import { makeKeymap } from "./lib/keymap";
   import Library from "./panes/Library.svelte";
   import CollectionsPanel from "./panes/CollectionsPanel.svelte";
+  import Reviewing from "./panes/Reviewing.svelte";
+  import { refreshReviewProjects } from "./state/review.svelte";
   import TabBar from "./panes/TabBar.svelte";
   import TabContent from "./panes/TabContent.svelte";
   import Toaster from "./panes/Toaster.svelte";
@@ -150,7 +152,8 @@
     "Mod+N": { run: () => void addPaperFlow(), allowInEditableTargets: true },
     /* ⌘⇧L — toggle the collections side panel. */
     "Mod+Shift+L": {
-      run: () => (prefsState.collectionsPanelOpen = !prefsState.collectionsPanelOpen),
+      run: () =>
+        (prefsState.viewMode = prefsState.viewMode === "organize" ? "reading" : "organize"),
       allowInEditableTargets: true,
     },
     /* ⌘F — context-aware find. When CodeMirror has focus, CM's own
@@ -234,6 +237,12 @@
     return target ? target.getAttribute("data-drop-target-slug") : null;
   }
 
+  /* When a file drag is over a review project's drop target, this carries
+   * the slug ("review:<project>") so the drop handler can route the PDFs
+   * to that project's filing flow instead of the regular library flow.
+   * Updated on every "over" event with file paths; cleared on leave/drop. */
+  let externalFileHoverSlug = $state<string | null>(null);
+
   async function setupDragDrop() {
     const webview = getCurrentWebview();
     const unlisten = await webview.onDragDropEvent(async (event) => {
@@ -242,27 +251,65 @@
         lastEnterHadPaths = paths.length > 0;
         if (lastEnterHadPaths) {
           dragOver = true;
+          externalFileHoverSlug = dropSlugAt(event.payload.position);
+          /* Mirror onto dndState so the Reviewing pane's drop-target
+           * highlight (which reads from dndState.hoverSlug) lights up
+           * during file drags too. */
+          if (externalFileHoverSlug?.startsWith("review:")) {
+            setHoverSlug(externalFileHoverSlug);
+          }
         } else if (dndState.active) {
           setHoverSlug(dropSlugAt(event.payload.position));
         }
       } else if (event.payload.type === "over") {
         if (lastEnterHadPaths) {
           dragOver = true;
+          externalFileHoverSlug = dropSlugAt(event.payload.position);
+          if (externalFileHoverSlug?.startsWith("review:")) {
+            setHoverSlug(externalFileHoverSlug);
+          } else {
+            setHoverSlug(null);
+          }
         } else if (dndState.active) {
           setHoverSlug(dropSlugAt(event.payload.position));
         }
       } else if (event.payload.type === "leave") {
         dragOver = false;
         lastEnterHadPaths = false;
-        if (dndState.active) setHoverSlug(null);
+        externalFileHoverSlug = null;
+        setHoverSlug(null);
       } else if (event.payload.type === "drop") {
         dragOver = false;
         const wasFileDrop = lastEnterHadPaths;
+        const dropSlug = externalFileHoverSlug;
         lastEnterHadPaths = false;
+        externalFileHoverSlug = null;
+        setHoverSlug(null);
         if (wasFileDrop) {
           const paths = (event.payload.paths ?? []).filter((p) => p.toLowerCase().endsWith(".pdf"));
           if (paths.length === 0) {
             toast("No PDFs in dropped files.", "error");
+            return;
+          }
+          if (dropSlug?.startsWith("review:")) {
+            const project = dropSlug.slice("review:".length);
+            try {
+              const results = await dropToReviewProject(paths, project);
+              const filed = results.filter((r) => r.status === "filed");
+              const errors = results.filter((r) => r.status === "error");
+              if (filed.length > 0) {
+                toast(
+                  `Filed ${filed.length} to ${project}` +
+                    (errors.length > 0 ? ` · ${errors.length} failed` : ""),
+                  errors.length > 0 ? "error" : undefined,
+                );
+              } else if (errors.length > 0) {
+                toast(`Filing failed: ${errors[0].detail ?? "unknown error"}`, "error");
+              }
+              void refreshReviewProjects();
+            } catch (e) {
+              toast(`Drop to ${project} failed: ${e}`, "error");
+            }
             return;
           }
           try {
@@ -288,6 +335,7 @@
 
   let stopAutoSave: (() => void) | null = null;
   let unlistenLibraryChanged: UnlistenFn | null = null;
+  let unlistenReviewChanged: UnlistenFn | null = null;
   let unlistenMenuOpenVault: UnlistenFn | null = null;
   let unlistenMenuNewVault: UnlistenFn | null = null;
   let unlistenMenuPrintPdf: UnlistenFn | null = null;
@@ -401,6 +449,9 @@
         void refreshLibrary();
         void refreshCollections();
       });
+      unlistenReviewChanged = await listen("review:changed", () => {
+        void refreshReviewProjects();
+      });
       void refreshCollections();
       // Warm-up: probe the embed server in the background so the semantic
       // toggle has a known state by the time the user reaches for it.
@@ -420,6 +471,7 @@
     unlistenDragDrop?.();
     stopAutoSave?.();
     unlistenLibraryChanged?.();
+    unlistenReviewChanged?.();
     unlistenMenuOpenVault?.();
     unlistenMenuNewVault?.();
     unlistenMenuPrintPdf?.();
@@ -434,7 +486,8 @@
     style="--lib-w: {prefsState.libraryCollapsed ? 0 : prefsState.libraryWidth}px;"
     class:dragover={dragOver}
     class:lib-collapsed={prefsState.libraryCollapsed}
-    class:coll-open={prefsState.collectionsPanelOpen}
+    class:coll-open={prefsState.viewMode === "organize"}
+    class:review-open={prefsState.viewMode === "review"}
     class:focus={prefsState.focusMode}
   >
     {#if !prefsState.libraryCollapsed && !prefsState.focusMode}
@@ -446,12 +499,17 @@
       {/if}
       <TabContent />
     </div>
-    {#if prefsState.collectionsPanelOpen && !prefsState.focusMode}
+    {#if prefsState.viewMode === "organize" && !prefsState.focusMode}
       <!-- Organize view is a full-window overlay so the same Reading /
            Organizing view-switch lands on the same screen (x, y) in both
            modes — and the library + reader (PDF, CodeMirror) stay mounted
            underneath, so toggling back is instant with no state loss. -->
       <div class="organize-overlay"><CollectionsPanel /></div>
+    {/if}
+    {#if prefsState.viewMode === "review" && !prefsState.focusMode}
+      <!-- Reviewing view — same overlay pattern as Organizing so the
+           ViewSwitch lands on the same screen position. -->
+      <div class="organize-overlay"><Reviewing /></div>
     {/if}
   </main>
 {/if}

@@ -471,7 +471,7 @@
           class="cf-row all-row cf-inbox-row"
           class:has-items={inboxState.items.length > 0}
           onclick={() => {
-            prefsState.collectionsPanelOpen = true;
+            prefsState.viewMode = "organize";
             requestOpenInbox();
           }}
           title="Open the Inbox in Organizing view">

@@ -6,11 +6,18 @@ export interface RecentEntry {
   at: number;
 }
 
+/** Top-level mode the app is in. "reading" is the default PDF+notes view;
+ *  "organize" overlays the CollectionsPanel for library curation;
+ *  "review" overlays the Reviewing pane for grading student work
+ *  (PDFs in `PDFs/reviewing/<project>/`, notes in `ReviewNotes/<project>/`,
+ *  hidden from the main library). All three are mutually exclusive. */
+export type ViewMode = "reading" | "organize" | "review";
+
 interface PrefsState {
   splitRatio: number;
   libraryWidth: number;
   libraryCollapsed: boolean;
-  collectionsPanelOpen: boolean;
+  viewMode: ViewMode;
   collectionsPanelWidth: number;
   recents: RecentEntry[];
   /** Focus / reading mode: hides library, tab bar and collections so
@@ -27,7 +34,7 @@ export const prefsState = $state<PrefsState>({
   splitRatio: 0.5,
   libraryWidth: 360,
   libraryCollapsed: false,
-  collectionsPanelOpen: false,
+  viewMode: "reading",
   collectionsPanelWidth: 260,
   recents: [],
   focusMode: false,

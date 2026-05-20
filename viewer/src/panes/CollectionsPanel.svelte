@@ -521,7 +521,7 @@
 
   function openPaperAndCollapse(citekey: string) {
     openInTab(citekey);
-    prefsState.collectionsPanelOpen = false;
+    prefsState.viewMode = "reading";
   }
 
   /* ----- drag-drop onto tree nodes --------------------------------------- */

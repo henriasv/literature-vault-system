@@ -761,6 +761,226 @@ pub fn inbox_retry_file(path: String) -> Result<FilingOutcome, String> {
     Ok(auto_file_one(&pdf))
 }
 
+// -------- Review-mode filing ----------------------------------------------
+//
+// Drop a batch of PDFs into a review project. Unlike the main filing flow,
+// review filings do NOT go through Inbox → extract_ids → CrossRef. Student
+// PDFs typically have no DOI, so we just copy the PDF into
+// `PDFs/reviewing/<project>/` and create a minimal ReviewNote whose
+// frontmatter conforms to the same shape as a library note (so the existing
+// frontmatter parser keeps working). All metadata is derived from the
+// filename stem; the user edits in the note body / frontmatter afterwards.
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ReviewFilingOutcome {
+    /// `review:<project>:<stem>` on success, empty string on error.
+    pub citekey: String,
+    /// `"filed"` or `"error"`.
+    pub status: String,
+    pub detail: Option<String>,
+    /// The original filename (without extension) used as the title seed.
+    pub source_name: String,
+}
+
+#[tauri::command]
+pub async fn drop_to_review_project(
+    pdf_paths: Vec<String>,
+    project: String,
+) -> Result<Vec<ReviewFilingOutcome>, String> {
+    let project_owned = project.clone();
+    let out = tokio::task::spawn_blocking(move || -> Result<Vec<ReviewFilingOutcome>> {
+        let notes_dir = crate::vault::review_notes_dir().join(&project_owned);
+        let pdfs_dir = crate::vault::reviewing_pdfs_dir().join(&project_owned);
+        std::fs::create_dir_all(&notes_dir)
+            .with_context(|| format!("create {}", notes_dir.display()))?;
+        std::fs::create_dir_all(&pdfs_dir)
+            .with_context(|| format!("create {}", pdfs_dir.display()))?;
+        let mut results = Vec::with_capacity(pdf_paths.len());
+        for src in pdf_paths {
+            results.push(file_one_review_pdf(
+                Path::new(&src),
+                &project_owned,
+                &pdfs_dir,
+                &notes_dir,
+            ));
+        }
+        Ok(results)
+    })
+    .await
+    .map_err(|e| format!("task join: {e}"))?
+    .map_err(|e| format!("{e:#}"))?;
+    Ok(out)
+}
+
+fn file_one_review_pdf(
+    src: &Path,
+    project: &str,
+    pdfs_dir: &Path,
+    notes_dir: &Path,
+) -> ReviewFilingOutcome {
+    let source_name = src
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unnamed")
+        .to_string();
+    let safe_stem = sanitize_review_stem(&source_name);
+
+    /* Collision suffix: -2, -3, … until both the PDF target and the note
+     * target are free. We check both so a half-filed paper (PDF written
+     * but note write failed) can't strand the namespace. */
+    let mut final_stem = safe_stem.clone();
+    let mut n: u32 = 1;
+    while pdfs_dir.join(format!("{final_stem}.pdf")).exists()
+        || notes_dir.join(format!("{final_stem}.md")).exists()
+    {
+        n += 1;
+        final_stem = format!("{safe_stem}-{n}");
+        if n > 9999 {
+            return ReviewFilingOutcome {
+                citekey: String::new(),
+                status: "error".into(),
+                detail: Some(format!("too many collisions for {}", src.display())),
+                source_name,
+            };
+        }
+    }
+
+    let target_pdf = pdfs_dir.join(format!("{final_stem}.pdf"));
+    let target_md = notes_dir.join(format!("{final_stem}.md"));
+
+    if let Err(e) = std::fs::copy(src, &target_pdf) {
+        return ReviewFilingOutcome {
+            citekey: String::new(),
+            status: "error".into(),
+            detail: Some(format!("copy PDF {} → {}: {e}", src.display(), target_pdf.display())),
+            source_name,
+        };
+    }
+
+    let citekey = format!("review:{project}:{final_stem}");
+    let added = today_iso_date();
+    let year = current_year();
+    let title = source_name.replace('_', " ");
+    let escaped_title = yaml_escape_inline(&title);
+    let frontmatter = format!(
+        "---\n\
+         citekey: {citekey}\n\
+         title: {escaped_title}\n\
+         authors: []\n\
+         year: {year}\n\
+         added: {added}\n\
+         tags: []\n\
+         sha256_pdf: \"\"\n\
+         review_project: {project}\n\
+         bibtex_type: studentwork\n\
+         ---\n",
+    );
+
+    if let Err(e) = crate::atomic::atomic_write(&target_md, frontmatter.as_bytes()) {
+        let _ = std::fs::remove_file(&target_pdf);
+        return ReviewFilingOutcome {
+            citekey: String::new(),
+            status: "error".into(),
+            detail: Some(format!("write note {}: {e}", target_md.display())),
+            source_name,
+        };
+    }
+
+    ReviewFilingOutcome {
+        citekey,
+        status: "filed".into(),
+        detail: None,
+        source_name,
+    }
+}
+
+/// Conservative filename sanitiser for the review-paper "stem" — strip
+/// path separators, NULs and the citekey separator `:` so the synthetic
+/// `review:<project>:<stem>` shape stays parseable.
+fn sanitize_review_stem(s: &str) -> String {
+    let cleaned: String = s
+        .chars()
+        .map(|c| {
+            if c == '/' || c == '\\' || c == '\0' || c == ':' {
+                '_'
+            } else {
+                c
+            }
+        })
+        .collect();
+    let trimmed = cleaned.trim().trim_matches('.').to_string();
+    if trimmed.is_empty() {
+        "unnamed".to_string()
+    } else {
+        trimmed
+    }
+}
+
+/// Minimal inline-YAML escaping for the title field. Wrap in double quotes
+/// if the string would otherwise need it (contains `:`, starts with a
+/// quote, etc.). Empty falls back to a single space placeholder so YAML
+/// parses the key as a string rather than null.
+fn yaml_escape_inline(s: &str) -> String {
+    if s.is_empty() {
+        return "\" \"".into();
+    }
+    let needs_quote = s.contains(':')
+        || s.contains('#')
+        || s.starts_with('"')
+        || s.starts_with('\'')
+        || s.starts_with('[')
+        || s.starts_with('{')
+        || s.starts_with('&')
+        || s.starts_with('*')
+        || s.starts_with('!')
+        || s.starts_with('|')
+        || s.starts_with('>')
+        || s.starts_with('-');
+    if needs_quote {
+        let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
+        format!("\"{escaped}\"")
+    } else {
+        s.to_string()
+    }
+}
+
+/// Today's date as `YYYY-MM-DD` (UTC), good enough for the `added:` field's
+/// sort-by-recency purpose. Uses Howard Hinnant's civil-from-days algorithm
+/// so we don't need a chrono / time dependency.
+fn today_iso_date() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    let days = secs / 86_400;
+    let (y, m, d) = civil_from_days(days);
+    format!("{:04}-{:02}-{:02}", y, m, d)
+}
+
+fn current_year() -> i32 {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    let days = secs / 86_400;
+    civil_from_days(days).0
+}
+
+fn civil_from_days(z: i64) -> (i32, u32, u32) {
+    let z = z + 719468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    (y as i32, m as u32, d as u32)
+}
+
 /// Remove a PDF from the Inbox. Used when the user decides a dropped
 /// file isn't worth keeping (wrong file, garbage, etc.). Errors if the
 /// path resolves outside the Inbox directory — protection against a
