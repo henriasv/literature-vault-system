@@ -27,7 +27,7 @@
   import CollectionsPanel from "./panes/CollectionsPanel.svelte";
   import Reviewing from "./panes/Reviewing.svelte";
   import ReviewMetaModal from "./panes/ReviewMetaModal.svelte";
-  import { refreshReviewProjects } from "./state/review.svelte";
+  import { refreshReviewProjects, reviewState } from "./state/review.svelte";
   import { openReviewMetaSheet } from "./state/reviewMetaEdit.svelte";
   import TabBar from "./panes/TabBar.svelte";
   import TabContent from "./panes/TabContent.svelte";
@@ -226,14 +226,22 @@
   /** Find the collection slug, if any, of the element under the given
    *  Tauri-reported drag position.
    *
-   *  History: Tauri 2's docs call the field `PhysicalPosition` and
-   *  imply physical pixels, but in this build it actually arrives in
-   *  logical (CSS) pixels — same units `document.elementFromPoint`
-   *  expects. Dividing by devicePixelRatio was producing a
-   *  half-position offset on Retina (highlight landed ~one list-length
-   *  above the cursor). Use the position as-is. */
+   *  History: Tauri 2's position payload has flip-flopped between
+   *  logical (CSS) and physical pixels across versions / macOS
+   *  releases. The current build sends `PhysicalPosition` carrying
+   *  physical pixels for external file drags (so on Retina the values
+   *  are 2× the CSS coordinate space that `elementFromPoint` expects)
+   *  but logical pixels for internal drags. Try as-is first; if that
+   *  misses, divide by `devicePixelRatio` and try again. */
   function dropSlugAt(pos: { x: number; y: number }): string | null {
-    const el = document.elementFromPoint(pos.x, pos.y) as HTMLElement | null;
+    const elFromAsIs = document.elementFromPoint(pos.x, pos.y) as HTMLElement | null;
+    let el = elFromAsIs;
+    if (!el) {
+      const dpr = window.devicePixelRatio || 1;
+      if (dpr !== 1) {
+        el = document.elementFromPoint(pos.x / dpr, pos.y / dpr) as HTMLElement | null;
+      }
+    }
     if (!el) return null;
     const target = el.closest<HTMLElement>("[data-drop-target-slug]");
     return target ? target.getAttribute("data-drop-target-slug") : null;
@@ -283,14 +291,23 @@
       } else if (event.payload.type === "drop") {
         dragOver = false;
         const wasFileDrop = lastEnterHadPaths;
-        /* Read the slug from the drop position itself rather than the
-         * stale "over"-captured slug. macOS Tauri 2 doesn't reliably
-         * stream "over" events during a native file drag — sometimes
-         * only "enter" + "drop" fire — so `externalFileHoverSlug` may
-         * still point at the window edge. Falling back to the drop
-         * coords guarantees we hit the row the cursor is actually on. */
-        const dropSlug =
-          dropSlugAt(event.payload.position) ?? externalFileHoverSlug;
+        const slugFromDropPos = dropSlugAt(event.payload.position);
+        /* Resolution order:
+         *   1. The slug under the cursor at drop time (most precise).
+         *   2. The slug captured during the last "over" event.
+         *   3. Reviewing-mode fallback: if the user is in Reviewing
+         *      view with a project selected, route the drop to that
+         *      project — Tauri 2 macOS sometimes reports drop coords in
+         *      a coordinate space that doesn't resolve via
+         *      `elementFromPoint` (negative Y vs. window-relative),
+         *      so cursor-based resolution can silently miss. The
+         *      selected-project fallback makes drops feel like Finder
+         *      folders: pick the destination, drop the files. */
+        const reviewFallback =
+          prefsState.viewMode === "review" && reviewState.selectedProject
+            ? `review:${reviewState.selectedProject}`
+            : null;
+        const dropSlug = slugFromDropPos ?? externalFileHoverSlug ?? reviewFallback;
         lastEnterHadPaths = false;
         externalFileHoverSlug = null;
         setHoverSlug(null);
@@ -511,7 +528,18 @@
     class:focus={prefsState.focusMode}
   >
     {#if !prefsState.libraryCollapsed && !prefsState.focusMode}
-      <div class="lib"><Library /></div>
+      <!-- Left rail. Reading mode shows the library list; Reviewing mode
+           replaces it with the project tree so the user can still see
+           the PDF + NoteEditor pane on the right while reviewing student
+           work. ViewSwitch at the top of each component lives at the
+           same screen (x, y) so the cursor doesn't move when toggling. -->
+      <div class="lib">
+        {#if prefsState.viewMode === "review"}
+          <Reviewing />
+        {:else}
+          <Library />
+        {/if}
+      </div>
     {/if}
     <div class="reader">
       {#if !prefsState.focusMode}
@@ -525,11 +553,6 @@
            modes — and the library + reader (PDF, CodeMirror) stay mounted
            underneath, so toggling back is instant with no state loss. -->
       <div class="organize-overlay"><CollectionsPanel /></div>
-    {/if}
-    {#if prefsState.viewMode === "review" && !prefsState.focusMode}
-      <!-- Reviewing view — same overlay pattern as Organizing so the
-           ViewSwitch lands on the same screen position. -->
-      <div class="organize-overlay"><Reviewing /></div>
     {/if}
   </main>
 {/if}
@@ -551,7 +574,9 @@
 
 {#if dragOver}
   <div class="drop-overlay">
-    {#if externalFileHoverSlug?.startsWith("review:")}
+    {#if prefsState.viewMode === "review" && reviewState.selectedProject}
+      <div class="drop-card">Drop PDFs into <strong>{reviewState.selectedProject}</strong></div>
+    {:else if externalFileHoverSlug?.startsWith("review:")}
       <div class="drop-card">Drop PDFs into <strong>{externalFileHoverSlug.slice("review:".length)}</strong></div>
     {:else}
       <div class="drop-card">Drop PDFs to add to Inbox</div>
