@@ -8,16 +8,16 @@
   import PDFView from "./PDFView.svelte";
   import EmbedPDFView from "./EmbedPDFView.svelte";
 
-  /* Feature flag — flip in DevTools console with
-   *   localStorage.setItem('vault.embedPdf', '1'); location.reload();
+  /* EmbedPDF is the canonical viewer (highlights/shapes/bookmarks/export
+   * all live there). The legacy PDFView remains as an opt-out for
+   * comparison — flip with
+   *   localStorage.setItem('vault.embedPdf', '0'); location.reload();
    * and back with
    *   localStorage.removeItem('vault.embedPdf'); location.reload();
-   * to compare the EmbedPDF spike against the existing hand-rolled
-   * PDFView. Lives in localStorage rather than settings so it's per-window
-   * and trivially togglable. */
+   */
   const useEmbedPdf =
-    typeof localStorage !== "undefined" &&
-    localStorage.getItem("vault.embedPdf") === "1";
+    typeof localStorage === "undefined" ||
+    localStorage.getItem("vault.embedPdf") !== "0";
 
   const initialPdfPct = $derived(Math.round(prefsState.splitRatio * 100));
 
