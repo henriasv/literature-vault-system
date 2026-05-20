@@ -70,10 +70,17 @@ pub fn print_pdf(path: String) -> Result<(), String> {
             }
         }
         let info = NSPrintInfo::sharedPrintInfo();
+        /* PageScaleNone is critical: when we pass PageScaleToFit (or
+         * ScaleDownToFit) PDFKit applies its OWN scaling factor inside
+         * the print operation and treats the panel's "Scale" slider as
+         * decorative. Passing None lets NSPrintInfo's scaling factor —
+         * which the panel writes to as the user drags the slider —
+         * actually drive output. autoRotate stays on so landscape
+         * pages still flip when needed. */
         let op = doc
             .printOperationForPrintInfo_scalingMode_autoRotate(
                 Some(&info),
-                PDFPrintScalingMode::PageScaleToFit,
+                PDFPrintScalingMode::PageScaleNone,
                 true,
                 mtm,
             )
