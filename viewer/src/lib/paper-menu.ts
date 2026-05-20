@@ -4,23 +4,11 @@
  * affordance is consistent across the app.
  */
 
-import { invoke } from "@tauri-apps/api/core";
 import { writeText as clipboardWriteText } from "@tauri-apps/plugin-clipboard-manager";
-import { readBibtex, pdfPathFor, paperMeta, type PaperMeta } from "./vault";
+import { readBibtex, paperMeta, type PaperMeta } from "./vault";
 import { toast } from "../state/toast.svelte";
 import { openReidentify } from "../state/reidentify.svelte";
 import type { MenuItem } from "../state/ctxmenu.svelte";
-
-/* Persisted across sessions in localStorage by NoteEditor's Export PDF
- * button. We honour the same value here so the user only has to pick
- * margin-vs-appendix once and it follows them between Export and Print. */
-type ExportMode = "appendix" | "margin";
-const EXPORT_MODE_KEY = "lv.exportMode";
-function currentExportMode(): ExportMode {
-  if (typeof localStorage === "undefined") return "margin";
-  const v = localStorage.getItem(EXPORT_MODE_KEY) as ExportMode | null;
-  return v === "appendix" ? "appendix" : "margin";
-}
 
 /* APA-ish: "Last, F., Last, F., & Last, F. (year). Title. Journal."
  * Authors arrive as "Last, First" (BibTeX convention) — we map them to
@@ -108,37 +96,6 @@ export function paperRowMenu(citekey: string): MenuItem[] {
             toast(`Copied ${citekey}`);
           } catch (e) {
             toast(`Copy failed: ${e}`, "error");
-          }
-        })();
-      },
-    },
-    {
-      label: "Print PDF…",
-      onclick: () => {
-        void (async () => {
-          try {
-            const path = await pdfPathFor(citekey);
-            await invoke("open_path_external", { path });
-          } catch (e) {
-            toast(`Print failed: ${e}`, "error");
-          }
-        })();
-      },
-    },
-    {
-      label: `Print with annotations… (${currentExportMode()})`,
-      onclick: () => {
-        void (async () => {
-          try {
-            const mode = currentExportMode();
-            toast(`Preparing annotated PDF (${mode})…`);
-            const res = await invoke<{ output: string }>("export_annotated_pdf", {
-              citekey,
-              mode,
-            });
-            await invoke("open_path_external", { path: res.output });
-          } catch (e) {
-            toast(`Print with annotations failed: ${e}`, "error");
           }
         })();
       },

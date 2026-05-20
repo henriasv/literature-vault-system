@@ -8,9 +8,10 @@
   import { refreshCollections } from "./state/collections.svelte";
   import { dndState, setHoverSlug } from "./state/dnd.svelte";
   import { bootstrapSession, setupAutoSave } from "./state/session.svelte";
-  import { startIndexWatch, windowAction } from "./lib/vault";
+  import { pdfPathFor, startIndexWatch, windowAction } from "./lib/vault";
   import {
     tabsState,
+    activeTab,
     closeActiveTab,
     closeAllTabs,
     cycleTab,
@@ -72,6 +73,40 @@
     // Print per-file detail to the devtools console for debugging.
     for (const r of results) {
       if (r.status !== "filed") console.warn(`[file] ${r.inboxPath}: ${r.status}`, r.detail);
+    }
+  }
+
+  /* Print the active tab's PDF straight to the macOS print sheet via
+   * PDFKit (no Preview in the loop). When `withAnnotations` is true we
+   * first generate an annotated copy using the persisted Export PDF
+   * mode (`lv.exportMode`, defaults to "margin"); otherwise the raw
+   * vault PDF is printed. */
+  async function printActivePaper(withAnnotations: boolean): Promise<void> {
+    const tab = activeTab();
+    if (!tab) {
+      toast("Open a paper first.", "error");
+      return;
+    }
+    const citekey = tab.citekey;
+    try {
+      let path: string;
+      if (withAnnotations) {
+        const mode =
+          (typeof localStorage !== "undefined"
+            ? (localStorage.getItem("lv.exportMode") as "appendix" | "margin" | null)
+            : null) || "margin";
+        toast(`Preparing annotated PDF (${mode})…`);
+        const res = await invoke<{ output: string }>("export_annotated_pdf", {
+          citekey,
+          mode,
+        });
+        path = res.output;
+      } else {
+        path = await pdfPathFor(citekey);
+      }
+      await invoke("print_pdf", { path });
+    } catch (e) {
+      toast(`Print failed: ${e}`, "error");
     }
   }
 
@@ -255,6 +290,8 @@
   let unlistenLibraryChanged: UnlistenFn | null = null;
   let unlistenMenuOpenVault: UnlistenFn | null = null;
   let unlistenMenuNewVault: UnlistenFn | null = null;
+  let unlistenMenuPrintPdf: UnlistenFn | null = null;
+  let unlistenMenuPrintAnnotated: UnlistenFn | null = null;
 
   /* Active-vault tri-state: null while we're asking the backend on startup,
    * false → render <NoVault /> as the entire window, true → normal app. */
@@ -334,6 +371,12 @@
       unlistenMenuNewVault = await listen("menu:new-vault", () => {
         void handleNewVault();
       });
+      unlistenMenuPrintPdf = await listen("menu:print-pdf", () => {
+        void printActivePaper(false);
+      });
+      unlistenMenuPrintAnnotated = await listen("menu:print-annotated", () => {
+        void printActivePaper(true);
+      });
 
       // Gate the heavy startup behind an actual vault. If none, render NoVault
       // and skip session / library / index-watch / embed-probe wiring.
@@ -379,6 +422,8 @@
     unlistenLibraryChanged?.();
     unlistenMenuOpenVault?.();
     unlistenMenuNewVault?.();
+    unlistenMenuPrintPdf?.();
+    unlistenMenuPrintAnnotated?.();
   });
 </script>
 

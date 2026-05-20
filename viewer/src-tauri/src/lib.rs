@@ -59,9 +59,22 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .build(app)?;
     let new_vault = MenuItemBuilder::with_id("file.new_vault", "New Vault…")
         .build(app)?;
+    /* Print items — operate on the currently active tab's PDF. ⌘P prints the
+     * raw PDF; ⌘⇧P generates an annotated copy (using the user's persisted
+     * Export PDF mode) and prints that. The actual work happens in the
+     * frontend so we just emit events here. */
+    let print_pdf = MenuItemBuilder::with_id("file.print_pdf", "Print PDF…")
+        .accelerator("CmdOrCtrl+P")
+        .build(app)?;
+    let print_annotated = MenuItemBuilder::with_id("file.print_annotated", "Print with Annotations…")
+        .accelerator("CmdOrCtrl+Shift+P")
+        .build(app)?;
     let file_submenu = SubmenuBuilder::new(app, "File")
         .item(&open_vault)
         .item(&new_vault)
+        .separator()
+        .item(&print_pdf)
+        .item(&print_annotated)
         .build()?;
     let edit_submenu = SubmenuBuilder::new(app, "Edit")
         .item(&PredefinedMenuItem::undo(app, None)?)
@@ -229,6 +242,7 @@ pub fn run() {
             inbox::extract_ids_from_pdf,
             export::export_annotated_pdf,
             external::open_path_external,
+            external::print_pdf,
             session::load_session,
             session::save_session,
             session::load_tab_state,
@@ -257,6 +271,12 @@ pub fn run() {
                 }
                 "file.new_vault" => {
                     let _ = app.emit("menu:new-vault", ());
+                }
+                "file.print_pdf" => {
+                    let _ = app.emit("menu:print-pdf", ());
+                }
+                "file.print_annotated" => {
+                    let _ = app.emit("menu:print-annotated", ());
                 }
                 _ => {}
             }
