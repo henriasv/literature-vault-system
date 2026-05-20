@@ -26,7 +26,9 @@
   import Library from "./panes/Library.svelte";
   import CollectionsPanel from "./panes/CollectionsPanel.svelte";
   import Reviewing from "./panes/Reviewing.svelte";
+  import ReviewMetaModal from "./panes/ReviewMetaModal.svelte";
   import { refreshReviewProjects } from "./state/review.svelte";
+  import { openReviewMetaSheet } from "./state/reviewMetaEdit.svelte";
   import TabBar from "./panes/TabBar.svelte";
   import TabContent from "./panes/TabContent.svelte";
   import Toaster from "./panes/Toaster.svelte";
@@ -281,7 +283,14 @@
       } else if (event.payload.type === "drop") {
         dragOver = false;
         const wasFileDrop = lastEnterHadPaths;
-        const dropSlug = externalFileHoverSlug;
+        /* Read the slug from the drop position itself rather than the
+         * stale "over"-captured slug. macOS Tauri 2 doesn't reliably
+         * stream "over" events during a native file drag — sometimes
+         * only "enter" + "drop" fire — so `externalFileHoverSlug` may
+         * still point at the window edge. Falling back to the drop
+         * coords guarantees we hit the row the cursor is actually on. */
+        const dropSlug =
+          dropSlugAt(event.payload.position) ?? externalFileHoverSlug;
         lastEnterHadPaths = false;
         externalFileHoverSlug = null;
         setHoverSlug(null);
@@ -302,6 +311,17 @@
                   `Filed ${filed.length} to ${project}` +
                     (errors.length > 0 ? ` · ${errors.length} failed` : ""),
                   errors.length > 0 ? "error" : undefined,
+                );
+                /* Pop the metadata sheet so the user can immediately
+                 * fix the filename-derived title / authors. They can
+                 * skip and edit later from the project pane. */
+                openReviewMetaSheet(
+                  filed.map((r) => ({
+                    citekey: r.citekey,
+                    sourceName: r.sourceName,
+                    title: r.sourceName.replace(/_/g, " "),
+                    authors: "",
+                  })),
                 );
               } else if (errors.length > 0) {
                 toast(`Filing failed: ${errors[0].detail ?? "unknown error"}`, "error");
@@ -524,9 +544,18 @@
   <ReidentifyModal citekey={reidentifyState.citekey} />
 {/if}
 
+<!-- Post-drop metadata sheet for review papers. Opens automatically after
+     a successful drop onto a review project; the user can edit title /
+     authors right away or skip and keep filename-derived defaults. -->
+<ReviewMetaModal />
+
 {#if dragOver}
   <div class="drop-overlay">
-    <div class="drop-card">Drop PDFs to add to Inbox</div>
+    {#if externalFileHoverSlug?.startsWith("review:")}
+      <div class="drop-card">Drop PDFs into <strong>{externalFileHoverSlug.slice("review:".length)}</strong></div>
+    {:else}
+      <div class="drop-card">Drop PDFs to add to Inbox</div>
+    {/if}
   </div>
 {/if}
 

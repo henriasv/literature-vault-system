@@ -188,57 +188,76 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--surface);
+    background: var(--panel);
     color: var(--fg);
     font-family: var(--sans);
   }
+
+  /* Top strip — same shape as CollectionsPanel so the ViewSwitch lands
+     on the same (x, y) when flipping between Reading / Organizing /
+     Reviewing. Window drag via JS startDragging() (mirrors the same
+     workaround used by CollectionsPanel). */
   .top-strip {
-    flex-shrink: 0;
+    flex: 0 0 auto;
     height: 56px;
-    padding: 14px 16px;
+    padding: 0 22px 0 var(--tl-pad);
     display: flex;
     align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid var(--ink-12, rgba(26, 22, 18, 0.12));
-    padding-left: 84px; /* traffic-light clearance */
+    gap: 14px;
+    border-bottom: 1px solid var(--ink-12);
+    background: var(--panel);
+    -webkit-app-region: drag;
   }
+  .top-strip > * { -webkit-app-region: no-drag; }
   .strip-spacer { flex: 1; }
   .top-meta {
-    font-size: 11px;
-    color: var(--ink-70, rgba(26, 22, 18, 0.7));
-    letter-spacing: 0.04em;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-50);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
   }
+
   .columns {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 320px 1fr;
+    flex: 1 1 auto;
     min-height: 0;
+    display: grid;
+    grid-template-columns: 340px 1fr;
   }
+
+  /* ----- projects pane (left) ------------------------------------- */
   .projects-pane {
-    border-right: 1px solid var(--ink-12);
     display: flex;
     flex-direction: column;
+    background: var(--panel);
+    border-right: 1px solid var(--ink-12);
+    min-width: 0;
     min-height: 0;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
   }
   .pane-head {
-    padding: 12px 14px 8px;
+    flex: 0 0 auto;
+    padding: 14px 22px 6px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid var(--ink-12);
+    gap: 12px;
   }
   .caps {
+    font-family: var(--sans);
     font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     text-transform: uppercase;
-    color: var(--ink-70);
+    color: var(--accent);
   }
   .add-btn {
     font-family: var(--sans);
     font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     padding: 4px 10px;
     border: 1px solid var(--ink);
@@ -246,87 +265,146 @@
     color: var(--ink);
     cursor: pointer;
   }
-  .add-btn:hover { background: var(--ink); color: var(--backdrop); }
+  .add-btn:hover { background: var(--ink); color: var(--panel); }
+
   .new-row {
-    padding: 10px 14px;
+    padding: 8px 22px 12px;
     display: flex;
     gap: 6px;
-    border-bottom: 1px solid var(--ink-12);
+    align-items: center;
   }
   .new-input {
     flex: 1;
+    min-width: 0;
     padding: 4px 8px;
     border: 1px solid var(--ink);
-    background: var(--surface);
+    background: var(--panel);
     color: var(--fg);
-    font-family: var(--mono, ui-monospace, monospace);
-    font-size: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .new-input:focus {
+    outline: 1px solid var(--accent);
+    outline-offset: -2px;
   }
   .new-ok, .new-cancel {
     padding: 4px 8px;
+    font-family: var(--sans);
     font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
     border: 1px solid var(--ink);
     background: transparent;
     color: var(--ink);
     cursor: pointer;
   }
-  .new-ok { background: var(--ink); color: var(--backdrop); }
-  .new-cancel:hover { background: var(--ink); color: var(--backdrop); }
+  .new-ok { background: var(--ink); color: var(--panel); }
+  .new-cancel:hover { background: var(--ink); color: var(--panel); }
+
   .tree-scroll {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
-    padding: 6px 0;
+    padding-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }
+
   .proj-row {
+    flex: 0 0 auto;
     width: 100%;
     text-align: left;
     background: transparent;
     color: var(--fg);
     border: 0;
-    padding: 7px 14px;
+    border-radius: 0;
+    padding: 7px 22px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    font-family: var(--mono, ui-monospace, monospace);
+    gap: 12px;
+    font-family: var(--mono);
     font-size: 12px;
     cursor: pointer;
   }
-  .proj-row:hover { background: var(--hover, rgba(26, 22, 18, 0.05)); }
-  .proj-row.active { background: var(--ink); color: var(--backdrop); }
-  .proj-row.drop-hover { outline: 2px dashed var(--accent, #B45F3A); outline-offset: -2px; }
-  .proj-count {
-    font-size: 10px;
-    color: var(--ink-70);
-    margin-left: 8px;
+  .proj-row:hover { background: var(--hover); }
+  .proj-row.active {
+    background: var(--accent-soft);
+    color: var(--accent);
   }
-  .proj-row.active .proj-count { color: var(--backdrop); }
+  .proj-row.drop-hover {
+    background: var(--drop-soft);
+    outline: 1px dashed var(--accent);
+    outline-offset: -1px;
+  }
+  .proj-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .proj-count {
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-50);
+    letter-spacing: 0.4px;
+  }
+  .proj-row.active .proj-count { color: var(--accent); }
+
   .empty {
-    padding: 20px 14px;
-    color: var(--ink-70);
+    padding: 18px 22px;
+    color: var(--ink-50);
     font-size: 12px;
     line-height: 1.5;
   }
-  .empty .hint { font-size: 11px; margin-top: 6px; }
+  .empty p { margin: 0 0 6px; }
+  .empty .hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3px;
+    color: var(--ink-30);
+  }
+
+  /* ----- papers pane (right) ------------------------------------- */
   .papers-pane {
     display: flex;
     flex-direction: column;
+    background: var(--panel);
+    min-width: 0;
     min-height: 0;
+    overflow: hidden;
   }
   .papers-head {
-    padding: 12px 16px 8px;
-    border-bottom: 1px solid var(--ink-12);
+    flex: 0 0 auto;
+    padding: 14px 24px 10px;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--ink-12);
   }
-  .hint { font-size: 11px; color: var(--ink-70); }
+  .papers-head .caps {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    text-transform: none;
+    color: var(--ink);
+  }
+  .hint {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--ink-30);
+  }
   .papers-list {
-    flex: 1;
+    flex: 1 1 auto;
     margin: 0;
-    padding: 4px 0;
+    padding: 6px 0 12px;
     list-style: none;
     overflow-y: auto;
   }
@@ -335,26 +413,46 @@
     text-align: left;
     background: transparent;
     border: 0;
-    padding: 10px 16px;
+    padding: 10px 24px;
     display: flex;
     flex-direction: column;
     gap: 2px;
     cursor: pointer;
     color: var(--fg);
+    font-family: var(--sans);
   }
-  .paper-row:hover { background: var(--hover, rgba(26, 22, 18, 0.05)); }
-  .paper-row .title { font-size: 13px; line-height: 1.35; }
-  .paper-row .sub { font-size: 11px; color: var(--ink-70); }
-  .empty-papers {
-    padding: 40px 24px;
-    color: var(--ink-70);
-    max-width: 480px;
-  }
-  .empty-papers h3 {
-    margin: 0 0 8px 0;
+  .paper-row:hover { background: var(--hover); }
+  .paper-row .title {
+    font-family: var(--serif);
     font-size: 14px;
-    font-family: var(--mono, ui-monospace, monospace);
+    line-height: 1.35;
     color: var(--ink);
   }
-  .empty-papers p { font-size: 12px; line-height: 1.5; margin: 6px 0; }
+  .paper-row .sub {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.2px;
+    color: var(--ink-50);
+  }
+
+  .empty-papers {
+    padding: 60px 32px;
+    max-width: 520px;
+    color: var(--ink-50);
+  }
+  .empty-papers h3 {
+    margin: 0 0 10px 0;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .empty-papers p {
+    margin: 4px 0;
+    font-size: 13px;
+    line-height: 1.55;
+    font-family: var(--serif);
+  }
 </style>

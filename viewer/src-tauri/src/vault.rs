@@ -665,6 +665,100 @@ fn sanitize_project_slug(slug: &str) -> Result<String> {
     Ok(trimmed.to_string())
 }
 
+/// Patch the title + authors fields in a freshly-dropped ReviewNote's
+/// frontmatter. The drop pipeline writes minimal placeholders ("authors:
+/// []", title derived from filename); this command is how the post-drop
+/// metadata sheet commits user edits without forcing them to hand-edit
+/// the markdown source. Preserves the note body verbatim and leaves the
+/// other custom fields (review_project, bibtex_type, …) untouched.
+#[tauri::command]
+pub fn update_review_meta(
+    citekey: String,
+    title: String,
+    authors: Vec<String>,
+) -> Result<(), String> {
+    let (project, stem) = parse_review_id(&citekey)
+        .ok_or_else(|| format!("not a review citekey: {citekey}"))?;
+    let path = review_note_path(&project, &stem);
+    let original = std::fs::read_to_string(&path)
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    let (yaml, body) = frontmatter::split(&original).map_err(|e| format!("{e:#}"))?;
+    let new_yaml = patch_title_and_authors(yaml, title.trim(), &authors)
+        .map_err(|e| format!("{e:#}"))?;
+    let new_content = format!("---\n{new_yaml}---\n{body}");
+    frontmatter::validate_required(&new_content)
+        .map_err(|e| format!("frontmatter validation after edit: {e:#}"))?;
+    atomic_write(&path, new_content.as_bytes())
+        .map_err(|e| format!("write {}: {e}", path.display()))
+}
+
+/// Walk the YAML text line-by-line and replace the `title:` and
+/// `authors:` blocks while leaving everything else byte-for-byte intact.
+/// Mirrors `frontmatter::replace_tags_block`'s strategy so we don't
+/// re-emit block scalars (abstract, bibtex) in unwanted ways.
+fn patch_title_and_authors(yaml: &str, new_title: &str, new_authors: &[String]) -> Result<String> {
+    let mut out = String::new();
+    let mut lines = yaml.split_inclusive('\n').peekable();
+    let mut title_done = false;
+    let mut authors_done = false;
+    while let Some(line) = lines.next() {
+        let is_title = line.starts_with("title:") && !title_done;
+        let is_authors = line.starts_with("authors:") && !authors_done;
+        if is_title {
+            out.push_str(&format!("title: {}\n", yaml_inline_string(new_title)));
+            title_done = true;
+            continue;
+        }
+        if is_authors {
+            /* Drop the continuation lines (indented sequence items). */
+            while let Some(peek) = lines.peek() {
+                if peek.starts_with(' ') || peek.starts_with('\t') {
+                    lines.next();
+                } else {
+                    break;
+                }
+            }
+            if new_authors.is_empty() {
+                out.push_str("authors: []\n");
+            } else {
+                out.push_str("authors:\n");
+                for a in new_authors {
+                    out.push_str(&format!("  - {}\n", yaml_inline_string(a)));
+                }
+            }
+            authors_done = true;
+            continue;
+        }
+        out.push_str(line);
+    }
+    if !title_done {
+        anyhow::bail!("title: key not found in frontmatter");
+    }
+    if !authors_done {
+        anyhow::bail!("authors: key not found in frontmatter");
+    }
+    Ok(out)
+}
+
+/// Quote a string for YAML inline use if it contains any indicator that
+/// would otherwise confuse the parser. Empty string folds to `""` so
+/// the field stays a string (not null).
+fn yaml_inline_string(s: &str) -> String {
+    if s.is_empty() {
+        return "\"\"".into();
+    }
+    let needs_quote = s.contains(':')
+        || s.contains('#')
+        || s.contains('"')
+        || s.starts_with(['"', '\'', '[', '{', '&', '*', '!', '|', '>', '-', '?', '@', '%']);
+    if needs_quote {
+        let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
+        format!("\"{escaped}\"")
+    } else {
+        s.to_string()
+    }
+}
+
 #[tauri::command]
 pub fn create_review_project(slug: String) -> Result<String, String> {
     let safe = sanitize_project_slug(&slug).map_err(|e| format!("invalid slug: {e:#}"))?;

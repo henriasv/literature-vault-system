@@ -232,6 +232,7 @@ pub fn run() {
             vault::list_review_projects,
             vault::list_review_papers,
             vault::create_review_project,
+            vault::update_review_meta,
             inbox::drop_to_inbox,
             inbox::drop_to_review_project,
             inbox::drop_and_file,
