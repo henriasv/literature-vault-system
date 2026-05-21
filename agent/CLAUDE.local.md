@@ -164,6 +164,29 @@ Sub-collections are subdirectories: `Collections/drafts/thesis-3/index.md`. The 
 
 Before trashing the old note, check `## Why`, `## Notes`, and `## Cleaned Notes` for any user-written content. If present, copy it into the new note before committing. Never silently discard notes.
 
+## Review-mode papers (student work)
+
+The vault has a parallel subtree for grading student assignments:
+
+| Artifact      | Path                                                   |
+|---------------|--------------------------------------------------------|
+| PDF           | `PDFs/reviewing/<project>/<stem>.pdf`                  |
+| Note          | `ReviewNotes/<project>/<stem>.md`                      |
+| Annotations   | `Annotations/reviewing/<project>/<stem>.json`          |
+| (legacy)      | `Annotations/review-<project>-<stem>.json`             |
+| Frontmatter   | `citekey: review:<project>:<stem>` (inside the Note)   |
+
+These never appear in `list_papers` / the main library and never enter `Bibfiles/` or `library.bib`.
+
+**Renaming or moving a review paper**: always use `rename_review_paper.py`. Direct file moves risk drift between the four artifacts. The script atomically renames PDF + Note + Annotations and rewrites the frontmatter citekey, rolls back on any failure, and migrates legacy `review-<proj>-<stem>.json` annotation files to the canonical subdir layout.
+
+```
+uv run /workspace/extra/system/scripts/rename_review_paper.py \
+       --citekey review:<proj>:<stem> [--new-stem <s>] [--new-project <p>]
+```
+
+`--new-stem` renames within the same project; `--new-project` moves between projects; both can be combined. Returns JSON with the old + new citekeys and new absolute paths.
+
 ## Hard rules
 
 - Never modify a note's body **except** to insert into `## Why`, rewrite `## Cleaned Notes`, or append to `## Notes` (the last via `append_note.py`).
