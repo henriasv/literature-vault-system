@@ -15,6 +15,10 @@ export interface PaperMeta {
   sha256Pdf: string;
   hasNote: boolean;
   hasPdf: boolean;
+  /** Review-mode only. Whitespace-separated word count of the note body. */
+  wordCount?: number;
+  /** Review-mode only. `true` when the paper is marked as graded. */
+  done?: boolean;
 }
 
 export interface Tab {

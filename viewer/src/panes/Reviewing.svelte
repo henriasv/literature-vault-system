@@ -21,6 +21,8 @@
     refreshReviewProjects,
     selectReviewProject,
     createReviewProjectFlow,
+    setReviewSort,
+    toggleReviewDone,
   } from "../state/review.svelte";
   import { dndState } from "../state/dnd.svelte";
   import { openCtxMenu } from "../state/ctxmenu.svelte";
@@ -102,6 +104,7 @@
   function onPaperContextMenu(e: MouseEvent, paper: PaperMeta): void {
     e.preventDefault();
     e.stopPropagation();
+    const isDone = paper.done === true;
     openCtxMenu(e.clientX, e.clientY, [
       {
         label: "Rename / edit metadata…",
@@ -114,6 +117,12 @@
               authors: paper.authors.join(", "),
             },
           ]);
+        },
+      },
+      {
+        label: isDone ? "Mark as in progress" : "Mark as done reviewing",
+        onclick: () => {
+          void toggleReviewDone(paper.citekey, !isDone);
         },
       },
     ]);
@@ -195,9 +204,25 @@
   {#if reviewState.selectedProject}
     <div class="section-head papers-head">
       <div class="caps">{reviewState.selectedProject}</div>
-      <span class="hint">
-        {reviewState.papers.length} paper{reviewState.papers.length === 1 ? "" : "s"}
-      </span>
+      <div class="papers-controls">
+        <div class="sort-toggle" role="tablist" aria-label="Sort">
+          <button
+            class="sort-seg"
+            class:on={reviewState.sort === "name"}
+            onclick={() => setReviewSort("name")}
+            role="tab"
+            aria-selected={reviewState.sort === "name"}>name</button>
+          <button
+            class="sort-seg"
+            class:on={reviewState.sort === "added"}
+            onclick={() => setReviewSort("added")}
+            role="tab"
+            aria-selected={reviewState.sort === "added"}>added</button>
+        </div>
+        <span class="hint">
+          {reviewState.papers.length} paper{reviewState.papers.length === 1 ? "" : "s"}
+        </span>
+      </div>
     </div>
     <div class="papers-scroll">
       {#if reviewState.loading}
@@ -206,15 +231,25 @@
         <div class="empty"><p class="hint">Drag PDFs onto this project to file them.</p></div>
       {:else}
         {#each reviewState.papers as p (p.citekey)}
+          {@const wc = p.wordCount ?? 0}
           <button
             class="paper-row"
+            class:done={p.done === true}
             ondblclick={() => openPaper(p.citekey)}
             onclick={() => openPaper(p.citekey)}
             oncontextmenu={(e) => onPaperContextMenu(e, p)}>
             <span class="title">{p.title || p.citekey}</span>
-            {#if p.authors.length > 0}
-              <span class="sub">{p.authors[0]}{p.authors.length > 1 ? " +" + (p.authors.length - 1) : ""}</span>
-            {/if}
+            <span class="sub">
+              {#if p.authors.length > 0}
+                <span>{p.authors[0]}{p.authors.length > 1 ? " +" + (p.authors.length - 1) : ""}</span>
+                <span class="dot">·</span>
+              {/if}
+              <span class="words">{wc} word{wc === 1 ? "" : "s"}</span>
+              {#if p.done === true}
+                <span class="dot">·</span>
+                <span class="done-badge">done reviewing</span>
+              {/if}
+            </span>
           </button>
         {/each}
       {/if}
@@ -448,5 +483,46 @@
     font-size: 10px;
     letter-spacing: 0.2px;
     color: var(--ink-50);
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .paper-row .sub .dot { color: var(--ink-30); }
+  .paper-row .sub .words { color: var(--ink-50); }
+  .paper-row .sub .done-badge {
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .paper-row.done .title { color: var(--ink-50); }
+
+  .papers-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sort-toggle {
+    display: inline-flex;
+    border: 1px solid var(--ink-12);
+  }
+  .sort-seg {
+    padding: 2px 8px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--ink-50);
+    border: 0;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .sort-seg:hover:not(.on) { color: var(--ink); }
+  .sort-seg.on {
+    background: var(--ink);
+    color: var(--panel);
+    cursor: default;
   }
 </style>

@@ -260,6 +260,16 @@ pub struct PaperMeta {
     pub sha256_pdf: String,
     pub has_note: bool,
     pub has_pdf: bool,
+    /// Review-mode only. Populated by `list_review_papers` (counts
+    /// whitespace-separated tokens in the markdown body) so the
+    /// project rail can surface "how much have I written on this one".
+    /// `None` for library papers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub word_count: Option<u32>,
+    /// Review-mode only. `done: true` in frontmatter means the user
+    /// has marked the paper as graded. `None` for library papers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub done: Option<bool>,
 }
 
 impl PaperMeta {
@@ -279,8 +289,17 @@ impl PaperMeta {
             sha256_pdf: fm.sha256_pdf,
             has_note: true,
             has_pdf,
+            word_count: None,
+            done: fm.done,
         }
     }
+}
+
+/// Count whitespace-separated tokens in the markdown body. Used by the
+/// review-mode listing so the user can see how much they've written per
+/// paper. Naive (no HTML/markdown stripping); a good-enough signal.
+fn count_body_words(body: &str) -> u32 {
+    body.split_whitespace().filter(|s| !s.is_empty()).count() as u32
 }
 
 fn load_meta_from_path(path: &Path) -> Result<PaperMeta> {
@@ -632,7 +651,16 @@ pub fn list_review_papers(project: String) -> Result<Vec<PaperMeta>, String> {
             let fm = frontmatter::parse(&contents)
                 .with_context(|| format!("frontmatter in {}", path.display()))?;
             let has_pdf = review_pdf_path(&project, &stem).is_file();
-            Ok(PaperMeta::from_frontmatter(fm, has_pdf))
+            let mut meta = PaperMeta::from_frontmatter(fm, has_pdf);
+            /* Word count is review-only — compute on each listing so we
+             * don't have to keep a counter in sync with edits. The body
+             * lookup re-parses the file rather than reusing the slice
+             * from `frontmatter::parse` so we don't have to thread the
+             * body through; the file is small and already in page cache. */
+            if let Ok((_, body)) = frontmatter::split(&contents) {
+                meta.word_count = Some(count_body_words(body));
+            }
+            Ok(meta)
         })();
         match loaded {
             Ok(meta) => papers.push(meta),
@@ -690,6 +718,48 @@ pub fn update_review_meta(
         .map_err(|e| format!("frontmatter validation after edit: {e:#}"))?;
     atomic_write(&path, new_content.as_bytes())
         .map_err(|e| format!("write {}: {e}", path.display()))
+}
+
+/// Toggle the `done` frontmatter flag for a review paper. Adds the
+/// field if missing (older filings predate the flag) and replaces it
+/// in-place otherwise.
+#[tauri::command]
+pub fn set_review_done(citekey: String, done: bool) -> Result<(), String> {
+    let (project, stem) = parse_review_id(&citekey)
+        .ok_or_else(|| format!("not a review citekey: {citekey}"))?;
+    let path = review_note_path(&project, &stem);
+    let original = std::fs::read_to_string(&path)
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    let (yaml, body) = frontmatter::split(&original).map_err(|e| format!("{e:#}"))?;
+    let new_yaml = upsert_done(yaml, done);
+    let new_content = format!("---\n{new_yaml}---\n{body}");
+    frontmatter::validate_required(&new_content)
+        .map_err(|e| format!("frontmatter validation after done toggle: {e:#}"))?;
+    atomic_write(&path, new_content.as_bytes())
+        .map_err(|e| format!("write {}: {e}", path.display()))
+}
+
+/// Write the `done` field into a YAML frontmatter text. If it exists,
+/// replace the line; otherwise append before the closing fence.
+fn upsert_done(yaml: &str, done: bool) -> String {
+    let new_line = format!("done: {}\n", done);
+    let mut out = String::new();
+    let mut replaced = false;
+    for line in yaml.split_inclusive('\n') {
+        if line.starts_with("done:") {
+            out.push_str(&new_line);
+            replaced = true;
+        } else {
+            out.push_str(line);
+        }
+    }
+    if !replaced {
+        if !out.is_empty() && !out.ends_with('\n') {
+            out.push('\n');
+        }
+        out.push_str(&new_line);
+    }
+    out
 }
 
 /// Walk the YAML text line-by-line and replace the `title:` and

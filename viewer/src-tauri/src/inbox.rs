@@ -874,6 +874,7 @@ fn file_one_review_pdf(
          sha256_pdf: \"\"\n\
          review_project: {project}\n\
          bibtex_type: studentwork\n\
+         done: false\n\
          ---\n",
     );
 

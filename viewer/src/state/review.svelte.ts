@@ -15,11 +15,23 @@ export interface ReviewProject {
   paperCount: number;
 }
 
+/** Sort order for the papers list inside a selected project. Persists in
+ *  localStorage so the user's pick survives reloads. */
+export type ReviewSort = "added" | "name";
+const SORT_KEY = "lv.reviewSort";
+
+function loadInitialSort(): ReviewSort {
+  if (typeof localStorage === "undefined") return "added";
+  const v = localStorage.getItem(SORT_KEY);
+  return v === "name" ? "name" : "added";
+}
+
 interface ReviewState {
   projects: ReviewProject[];
   selectedProject: string | null;
   papers: PaperMeta[];
   loading: boolean;
+  sort: ReviewSort;
 }
 
 export const reviewState = $state<ReviewState>({
@@ -27,7 +39,26 @@ export const reviewState = $state<ReviewState>({
   selectedProject: null,
   papers: [],
   loading: false,
+  sort: loadInitialSort(),
 });
+
+export function setReviewSort(sort: ReviewSort): void {
+  reviewState.sort = sort;
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(SORT_KEY, sort);
+  }
+  sortPapersInPlace();
+}
+
+function sortPapersInPlace(): void {
+  const list = [...reviewState.papers];
+  if (reviewState.sort === "name") {
+    list.sort((a, b) => (a.title || a.citekey).localeCompare(b.title || b.citekey));
+  } else {
+    list.sort((a, b) => b.added.localeCompare(a.added));
+  }
+  reviewState.papers = list;
+}
 
 export async function refreshReviewProjects(): Promise<void> {
   try {
@@ -62,11 +93,23 @@ async function refreshSelectedProjectPapers(): Promise<void> {
     reviewState.papers = await invoke<PaperMeta[]>("list_review_papers", {
       project: reviewState.selectedProject,
     });
+    sortPapersInPlace();
   } catch (e) {
     console.error("list_review_papers failed", e);
     reviewState.papers = [];
   } finally {
     reviewState.loading = false;
+  }
+}
+
+export async function toggleReviewDone(citekey: string, done: boolean): Promise<void> {
+  await invoke("set_review_done", { citekey, done });
+  /* Optimistic patch so the row updates instantly; the watcher will
+   * follow up with a refresh that confirms (and corrects, if writing
+   * failed). */
+  const idx = reviewState.papers.findIndex((p) => p.citekey === citekey);
+  if (idx >= 0) {
+    reviewState.papers[idx] = { ...reviewState.papers[idx], done };
   }
 }
 

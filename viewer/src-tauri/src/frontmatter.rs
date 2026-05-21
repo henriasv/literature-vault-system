@@ -82,6 +82,10 @@ pub struct Frontmatter {
     #[serde(default)]
     pub abstract_: Option<String>,
     pub sha256_pdf: String,
+    /// Review-mode flag — present in ReviewNotes/<project>/<stem>.md only.
+    /// Toggled via `set_review_done` to mark a student paper as graded.
+    #[serde(default)]
+    pub done: Option<bool>,
 }
 
 /// Parse and return strongly-typed frontmatter. The `abstract` key collides with the Rust
@@ -153,6 +157,9 @@ pub fn parse(contents: &str) -> Result<Frontmatter> {
     };
     let abstract_ = get_opt_str("abstract").unwrap_or(None);
     let sha256_pdf = required_str("sha256_pdf")?;
+    let done = map
+        .get(Value::String("done".into()))
+        .and_then(|v| v.as_bool());
 
     Ok(Frontmatter {
         citekey,
@@ -167,6 +174,7 @@ pub fn parse(contents: &str) -> Result<Frontmatter> {
         tags,
         abstract_,
         sha256_pdf,
+        done,
     })
 }
 
