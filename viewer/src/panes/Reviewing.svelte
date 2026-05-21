@@ -232,25 +232,33 @@
       {:else}
         {#each reviewState.papers as p (p.citekey)}
           {@const wc = p.wordCount ?? 0}
-          <button
-            class="paper-row"
-            class:done={p.done === true}
-            ondblclick={() => openPaper(p.citekey)}
-            onclick={() => openPaper(p.citekey)}
-            oncontextmenu={(e) => onPaperContextMenu(e, p)}>
-            <span class="title">{p.title || p.citekey}</span>
-            <span class="sub">
-              {#if p.authors.length > 0}
-                <span>{p.authors[0]}{p.authors.length > 1 ? " +" + (p.authors.length - 1) : ""}</span>
-                <span class="dot">·</span>
-              {/if}
-              <span class="words">{wc} word{wc === 1 ? "" : "s"}</span>
-              {#if p.done === true}
-                <span class="dot">·</span>
-                <span class="done-badge">done reviewing</span>
-              {/if}
-            </span>
-          </button>
+          {@const isDone = p.done === true}
+          <div class="paper-item" class:done={isDone}>
+            <button
+              class="paper-row"
+              ondblclick={() => openPaper(p.citekey)}
+              onclick={() => openPaper(p.citekey)}
+              oncontextmenu={(e) => onPaperContextMenu(e, p)}>
+              <span class="title">{p.title || p.citekey}</span>
+              <span class="sub">
+                {#if p.authors.length > 0}
+                  <span>{p.authors[0]}{p.authors.length > 1 ? " +" + (p.authors.length - 1) : ""}</span>
+                  <span class="dot">·</span>
+                {/if}
+                <span class="words">{wc} word{wc === 1 ? "" : "s"}</span>
+              </span>
+            </button>
+            <button
+              class="done-btn"
+              class:on={isDone}
+              title={isDone ? "Click to mark as in progress" : "Click to mark as done reviewing"}
+              onclick={(e) => {
+                e.stopPropagation();
+                void toggleReviewDone(p.citekey, !isDone);
+              }}>
+              {isDone ? "✓ Done reviewing" : "Mark done"}
+            </button>
+          </div>
         {/each}
       {/if}
     </div>
@@ -457,13 +465,19 @@
   }
   .empty p { margin: 0 0 4px; }
 
-  .paper-row {
+  .paper-item {
     flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
     width: 100%;
+  }
+  .paper-row {
+    flex: 1 1 auto;
+    min-width: 0;
     text-align: left;
     background: transparent;
     border: 0;
-    padding: 8px 22px;
+    padding: 8px 12px 8px 22px;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -472,6 +486,29 @@
     font-family: var(--sans);
   }
   .paper-row:hover { background: var(--hover); }
+  .done-btn {
+    flex: 0 0 auto;
+    align-self: center;
+    margin-right: 14px;
+    padding: 3px 9px;
+    border: 1px solid var(--ink-12);
+    background: transparent;
+    color: var(--ink-50);
+    font-family: var(--sans);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .done-btn:hover { color: var(--ink); border-color: var(--ink); }
+  .done-btn.on {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .paper-item.done .title { color: var(--ink-50); }
   .paper-row .title {
     font-family: var(--serif);
     font-size: 13px;
