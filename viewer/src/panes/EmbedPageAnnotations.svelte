@@ -38,6 +38,7 @@
   import EmbedStickyNoteRenderer from "./EmbedStickyNoteRenderer.svelte";
   import EmbedFreeTextRenderer from "./EmbedFreeTextRenderer.svelte";
   import EmbedShapeRenderer from "./EmbedShapeRenderer.svelte";
+  import EmbedLinkRenderer from "./EmbedLinkRenderer.svelte";
   import { pdfNavState } from "../state/pdfNav.svelte";
 
   type Props = {
@@ -109,6 +110,18 @@
     component: EmbedShapeRenderer as any,
     interactionDefaults: { isDraggable: true, isResizable: false, isRotatable: false },
   });
+  /* LINK renderer: opens URI links in the OS default browser (via
+   * `open_path_external`) and delegates internal page jumps to the
+   * annotation plugin. Replaces the bundled renderer whose click was
+   * wired via the broken `__click` delegation. */
+  const linkRenderer = createRenderer({
+    id: "link",
+    matches: (a: PdfAnnotationObject) =>
+      a.type === PdfAnnotationSubtype.LINK,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    component: EmbedLinkRenderer as any,
+    interactionDefaults: { isDraggable: false, isResizable: false, isRotatable: false },
+  });
 
   /* Flash overlay: when the Annotations tab in the right pane single-
    * clicks a row, pdfNavState.flash is set for ~800ms. If the annotation
@@ -147,6 +160,7 @@
     circleRenderer,
     lineRenderer,
     inkRenderer,
+    linkRenderer,
   ]}
 >
   {#snippet selectionMenuSnippet(props)}

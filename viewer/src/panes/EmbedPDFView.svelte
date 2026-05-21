@@ -37,7 +37,7 @@
   import { ZoomMode, ZoomPluginPackage, ZoomGestureWrapper } from "@embedpdf/plugin-zoom/svelte";
   import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/svelte";
   import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/svelte";
-  import { SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/svelte";
+  import { CopyToClipboard, SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/svelte";
   import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/svelte";
   import {
     AnnotationPluginPackage,
@@ -275,6 +275,12 @@
         {:else}
           <EmbedPdfToolbar documentId={activeDocumentId} {citekey} />
           <EmbedJumpListener documentId={activeDocumentId} {citekey} />
+          <!-- CopyToClipboard subscribes to the selection plugin's
+               onCopyToClipboard event (fired on ⌘C with an active text
+               selection) and writes the text via navigator.clipboard.
+               Without this utility mounted the selection plugin
+               recognises ⌘C but no one receives the text. -->
+          <CopyToClipboard />
 
           <DocumentContent documentId={activeDocumentId}>
             {#snippet children({ isLoading, isError, isLoaded })}
