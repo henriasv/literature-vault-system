@@ -14,7 +14,7 @@
    */
   import { onMount } from "svelte";
   import { getCurrentWindow } from "@tauri-apps/api/window";
-  import { openInTab } from "../state/tabs.svelte";
+  import { openInTab, tabsState } from "../state/tabs.svelte";
   import { toast } from "../state/toast.svelte";
   import {
     reviewState,
@@ -132,6 +132,13 @@
    * driven by dndState.hoverSlug (set by the App-level drag-drop
    * dispatcher during file drags). */
   const hoveredSlug = $derived(dndState.hoverSlug);
+
+  /* Citekey of the tab currently on screen — used to highlight the
+   * matching row in the papers list so the user can tell at a glance
+   * which paper is in view. */
+  const activeCitekey = $derived(
+    tabsState.activeIndex >= 0 ? tabsState.tabs[tabsState.activeIndex]?.citekey ?? null : null,
+  );
 </script>
 
 <section class="review-rail">
@@ -233,7 +240,8 @@
         {#each reviewState.papers as p (p.citekey)}
           {@const wc = p.wordCount ?? 0}
           {@const isDone = p.done === true}
-          <div class="paper-item" class:done={isDone}>
+          {@const isActive = p.citekey === activeCitekey}
+          <div class="paper-item" class:done={isDone} class:active={isActive}>
             <button
               class="paper-row"
               ondblclick={() => openPaper(p.citekey)}
@@ -509,6 +517,16 @@
     border-color: var(--accent);
   }
   .paper-item.done .title { color: var(--ink-50); }
+  /* The currently-open paper gets a subtle accent-tinted band + left
+     stripe so the user can tell at a glance which row is on screen.
+     We tint the whole row (rather than just the title) so it reads
+     cleanly even for done papers. */
+  .paper-item.active {
+    background: var(--accent-soft);
+    box-shadow: inset 3px 0 0 0 var(--accent);
+  }
+  .paper-item.active .title { color: var(--accent); }
+  .paper-item.active .paper-row:hover { background: transparent; }
   .paper-row .title {
     font-family: var(--serif);
     font-size: 13px;

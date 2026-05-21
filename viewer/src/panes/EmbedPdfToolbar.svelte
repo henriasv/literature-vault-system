@@ -241,17 +241,25 @@
     /* Sweep EVERY existing bookmark before creating the new one.
      *
      * Older versions only deleted the first match (the `bookmark`
-     * $derived returns only the first), so if a duplicate sneaked
-     * into the sidecar in an earlier session (e.g. set-here racing a
-     * cross-page reparent) it would survive every subsequent "move
-     * here" — the user ends up with two bookmark anchors on the
-     * same paper. Walk all annotations and delete each one tagged
-     * `custom.bookmark === true`. */
+     * $derived returns only the first), so a duplicate that sneaked
+     * into the sidecar in an earlier session would survive every
+     * subsequent "move here". Walk all annotations and delete each
+     * one tagged `custom.bookmark === true`.
+     *
+     * Each delete is wrapped in try/catch so one bad entry (e.g. a
+     * stored pageIndex that no longer matches the plugin's state
+     * after a reparent migration) can't abort the loop and prevent
+     * the new bookmark from being created — that's how "move here"
+     * silently stopped working on a paper with corrupted state. */
     const all = provides.getAnnotations();
     for (const t of all) {
       const o = t.object as { id: string; pageIndex: number; custom?: { bookmark?: boolean } };
       if (o.custom?.bookmark === true) {
-        provides.deleteAnnotation(o.pageIndex, o.id);
+        try {
+          provides.deleteAnnotation(o.pageIndex, o.id);
+        } catch (e) {
+          console.warn("[bookmark] sweep delete failed for", o.id, "@p", o.pageIndex, e);
+        }
       }
     }
     const newId = crypto.randomUUID();
