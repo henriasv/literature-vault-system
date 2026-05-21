@@ -33,6 +33,7 @@
     requestFlash,
     requestBookmarkMove,
   } from "../state/pdfNav.svelte";
+  import { prefsState } from "../state/prefs.svelte";
 
   let { citekey }: { citekey: string } = $props();
 
@@ -66,7 +67,9 @@
    *   - raw:         CodeMirror editor
    *   - annotations: list of highlights + sticky notes from the sidecar JSON
    */
-  let viewMode = $state<"rendered" | "raw" | "annotations">("rendered");
+  /* viewMode (Edit / Preview / Annotations toggle) is lifted into
+   * prefsState.noteViewMode so the choice persists when the user
+   * switches papers and across reloads (session.json). */
   /** Mirrors the editor doc so the rendered view recomputes when content changes. */
   let bodyText = $state("");
 
@@ -174,7 +177,7 @@
   $effect(() => {
     /* Refetch reactively: dep on citekey + viewMode + sidecarVersion. */
     const ck = citekey;
-    void viewMode;
+    void prefsState.noteViewMode;
     void pdfNavState.sidecarVersion;
     void loadAnnotations(ck);
   });
@@ -354,7 +357,7 @@
 
   marked.setOptions({ gfm: true, breaks: false });
   const renderedHtml = $derived(
-    viewMode === "rendered" ? (marked.parse(bodyText) as string) : ""
+    prefsState.noteViewMode === "rendered" ? (marked.parse(bodyText) as string) : ""
   );
 
   const meta = $derived(paperByCitekey(citekey));
@@ -947,9 +950,9 @@
 
   {#if !rawMode}
     <div class="view-toggle">
-      <button class:on={viewMode === "raw"} onclick={() => (viewMode = "raw")}>Edit</button>
-      <button class:on={viewMode === "rendered"} onclick={() => (viewMode = "rendered")}>Preview</button>
-      <button class:on={viewMode === "annotations"} onclick={() => (viewMode = "annotations")}>
+      <button class:on={prefsState.noteViewMode === "raw"} onclick={() => (prefsState.noteViewMode = "raw")}>Edit</button>
+      <button class:on={prefsState.noteViewMode === "rendered"} onclick={() => (prefsState.noteViewMode = "rendered")}>Preview</button>
+      <button class:on={prefsState.noteViewMode === "annotations"} onclick={() => (prefsState.noteViewMode = "annotations")}>
         Annotations{#if annotationRowsNoBookmark.length > 0} <span class="count">{annotationRowsNoBookmark.length}</span>{/if}
       </button>
       <span class="vt-grow"></span>
@@ -1016,13 +1019,13 @@
   {/if}
 
   <div class="body-stack">
-    {#if viewMode === "rendered" && !rawMode}
+    {#if prefsState.noteViewMode === "rendered" && !rawMode}
       <article class="rendered">
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html renderedHtml}
       </article>
     {/if}
-    {#if viewMode === "annotations" && !rawMode}
+    {#if prefsState.noteViewMode === "annotations" && !rawMode}
       <div class="annotations-list">
         {#if annotationsLoadError}
           <div class="ann-error">Couldn't read annotation sidecar: {annotationsLoadError}</div>
@@ -1093,7 +1096,7 @@
         {/if}
       </div>
     {/if}
-    <div bind:this={host} class="cm-host" class:hidden={viewMode !== "raw" && !rawMode}></div>
+    <div bind:this={host} class="cm-host" class:hidden={prefsState.noteViewMode !== "raw" && !rawMode}></div>
   </div>
 
   <div class="status">

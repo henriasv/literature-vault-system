@@ -13,11 +13,18 @@ export interface RecentEntry {
  *  hidden from the main library). All three are mutually exclusive. */
 export type ViewMode = "reading" | "organize" | "review";
 
+/** Which tab the NoteEditor shows for the active paper. Lifted into prefs
+ *  so the choice persists across paper switches (and reloads) — the
+ *  default was reverting to "rendered" every time the user opened a new
+ *  tab, which felt clumsy when they wanted to keep editing. */
+export type NoteViewMode = "rendered" | "raw" | "annotations";
+
 interface PrefsState {
   splitRatio: number;
   libraryWidth: number;
   libraryCollapsed: boolean;
   viewMode: ViewMode;
+  noteViewMode: NoteViewMode;
   collectionsPanelWidth: number;
   recents: RecentEntry[];
   /** Focus / reading mode: hides library, tab bar and collections so
@@ -35,6 +42,7 @@ export const prefsState = $state<PrefsState>({
   libraryWidth: 360,
   libraryCollapsed: false,
   viewMode: "reading",
+  noteViewMode: "rendered",
   collectionsPanelWidth: 260,
   recents: [],
   focusMode: false,

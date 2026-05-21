@@ -21,6 +21,9 @@ interface PersistedSession {
   /** Newer field. Older sessions persisted `collectionsPanelOpen` (boolean);
    *  the loader below migrates the legacy field to `viewMode` on the next save. */
   viewMode?: "reading" | "organize" | "review";
+  /** Persists the EDIT / PREVIEW / ANNOTATIONS choice across paper
+   *  switches and reloads. */
+  noteViewMode?: "rendered" | "raw" | "annotations";
   /** Deprecated. Read for migration only; never written by the current code. */
   collectionsPanelOpen?: boolean;
   collectionsPanelWidth: number;
@@ -117,6 +120,7 @@ export function scheduleSessionSave(): void {
       libraryCollapsed: prefsState.libraryCollapsed,
       libraryWidth: prefsState.libraryWidth,
       viewMode: prefsState.viewMode,
+      noteViewMode: prefsState.noteViewMode,
       collectionsPanelWidth: prefsState.collectionsPanelWidth,
       recents: prefsState.recents,
     };
@@ -142,6 +146,13 @@ export async function bootstrapSession(): Promise<void> {
         prefsState.viewMode = parsed.viewMode;
       } else if (parsed.collectionsPanelOpen === true) {
         prefsState.viewMode = "organize";
+      }
+      if (
+        parsed.noteViewMode === "rendered" ||
+        parsed.noteViewMode === "raw" ||
+        parsed.noteViewMode === "annotations"
+      ) {
+        prefsState.noteViewMode = parsed.noteViewMode;
       }
       if (typeof parsed.collectionsPanelWidth === "number")
         prefsState.collectionsPanelWidth = parsed.collectionsPanelWidth;
@@ -200,6 +211,7 @@ export function setupAutoSave(): () => void {
       void prefsState.libraryCollapsed;
       void prefsState.libraryWidth;
       void prefsState.viewMode;
+      void prefsState.noteViewMode;
       void prefsState.collectionsPanelWidth;
       void prefsState.recents.length;
       // Track tabs structurally: count + each citekey + each preview

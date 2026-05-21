@@ -238,15 +238,21 @@
       origin: { x: cx - BOOKMARK_SIZE / 2, y: cy - BOOKMARK_SIZE / 2 },
       size: { width: BOOKMARK_SIZE, height: BOOKMARK_SIZE },
     };
-    /* Always delete-then-create. updateAnnotation's reducer patches the
-     * annotation's fields but keeps it indexed under its original page
-     * in `state.pages`, so a same-page rect change works but a cross-
-     * page move leaves a phantom on the old page and nothing on the
-     * new one. createAnnotation correctly inserts under the new page,
-     * so we just remove and re-insert. */
-    const existing = bookmark;
-    if (existing) {
-      provides.deleteAnnotation(existing.pageIndex, existing.id);
+    /* Sweep EVERY existing bookmark before creating the new one.
+     *
+     * Older versions only deleted the first match (the `bookmark`
+     * $derived returns only the first), so if a duplicate sneaked
+     * into the sidecar in an earlier session (e.g. set-here racing a
+     * cross-page reparent) it would survive every subsequent "move
+     * here" — the user ends up with two bookmark anchors on the
+     * same paper. Walk all annotations and delete each one tagged
+     * `custom.bookmark === true`. */
+    const all = provides.getAnnotations();
+    for (const t of all) {
+      const o = t.object as { id: string; pageIndex: number; custom?: { bookmark?: boolean } };
+      if (o.custom?.bookmark === true) {
+        provides.deleteAnnotation(o.pageIndex, o.id);
+      }
     }
     const newId = crypto.randomUUID();
     provides.createAnnotation(current - 1, {
