@@ -38,6 +38,7 @@
   import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/svelte";
   import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/svelte";
   import { CopyToClipboard, SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/svelte";
+  import EmbedCopyKeybind from "./EmbedCopyKeybind.svelte";
   import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/svelte";
   import {
     AnnotationPluginPackage,
@@ -275,11 +276,13 @@
         {:else}
           <EmbedPdfToolbar documentId={activeDocumentId} {citekey} />
           <EmbedJumpListener documentId={activeDocumentId} {citekey} />
-          <!-- CopyToClipboard subscribes to the selection plugin's
-               onCopyToClipboard event (fired on ⌘C with an active text
-               selection) and writes the text via navigator.clipboard.
-               Without this utility mounted the selection plugin
-               recognises ⌘C but no one receives the text. -->
+          <!-- The selection plugin emits `onCopyToClipboard` events
+               when its `copyToClipboard()` action is invoked, but it
+               does NOT install its own ⌘C listener. EmbedCopyKeybind
+               adds the listener and triggers copyToClipboard(); then
+               CopyToClipboard receives the event and writes to
+               navigator.clipboard. Both are required. -->
+          <EmbedCopyKeybind documentId={activeDocumentId} />
           <CopyToClipboard />
 
           <DocumentContent documentId={activeDocumentId}>
