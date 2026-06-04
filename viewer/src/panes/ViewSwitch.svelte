@@ -69,14 +69,13 @@
   .view-switch {
     display: inline-flex;
     align-items: center;
-    height: 28px;
     background: transparent;
     flex-shrink: 0;
     gap: 20px;
   }
   .seg {
     position: relative;
-    padding: 4px 0;
+    padding: 1px 0 3px;
     background: transparent;
     color: var(--ink-30);
     border: 0;
@@ -90,13 +89,15 @@
     display: inline-flex;
     align-items: baseline;
     gap: 6px;
+    line-height: 1;
   }
   .seg:hover:not(.on) {
     color: var(--ink-70);
   }
   /* Active gets full-ink colour + a 1.5px accent underline that sits
-     directly under the baseline of the caps (border-bottom on the
-     button itself so it hugs the text width — no separate element). */
+     directly under the baseline. The asymmetric top/bottom padding
+     above keeps the underline close to the text so the label's
+     visual centre isn't dragged downward by trailing whitespace. */
   .seg.on {
     color: var(--ink);
     cursor: default;

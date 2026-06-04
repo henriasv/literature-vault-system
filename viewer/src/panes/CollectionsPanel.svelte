@@ -1634,11 +1634,13 @@
   }
 
   .top-strip {
+    position: relative;
     flex: 0 0 auto;
     height: 38px;
     padding: 0 22px 0 var(--tl-pad);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 14px;
     border-bottom: 1px solid var(--ink-12);
     background: var(--panel);
@@ -1653,9 +1655,16 @@
     -webkit-app-region: no-drag;
   }
   .strip-spacer {
-    flex: 1;
+    /* No longer pushes meta to the right — meta is absolutely
+       positioned now so the ViewSwitch can centre cleanly. Keep the
+       element so existing markup compiles; it just occupies no space. */
+    display: none;
   }
   .top-meta {
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
     font-family: var(--mono);
     font-size: 10px;
     color: var(--ink-50);

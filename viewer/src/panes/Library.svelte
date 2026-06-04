@@ -696,6 +696,7 @@
     padding: 0 22px 0 var(--tl-pad);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 14px;
     border-bottom: 1px solid var(--ink-12);
   }
