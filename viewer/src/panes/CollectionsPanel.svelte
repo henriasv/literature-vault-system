@@ -870,7 +870,13 @@
     class="top-strip"
     data-tauri-drag-region
     onmousedown={onStripMouseDown}>
-    <ViewSwitch active="organize" />
+    <!-- ViewSwitch is centred inside a left container the same width
+         as the folders-pane below (340px) so the labels sit above the
+         Collections column — matching where they appear in Reading
+         mode's left rail. The meta floats on the far right. -->
+    <div class="top-strip-rail">
+      <ViewSwitch active="organize" />
+    </div>
     <div class="strip-spacer"></div>
     <span class="top-meta">
       {libraryState.papers.length} papers · {collectionsState.list.length} collections
@@ -1634,14 +1640,11 @@
   }
 
   .top-strip {
-    position: relative;
     flex: 0 0 auto;
     height: 38px;
-    padding: 0 22px 0 var(--tl-pad);
+    padding: 0 22px 0 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
+    align-items: stretch;
     border-bottom: 1px solid var(--ink-12);
     background: var(--panel);
     /* macOS overlay-title window has no native title bar; the strip
@@ -1654,17 +1657,22 @@
   .top-strip > * {
     -webkit-app-region: no-drag;
   }
+  /* Left container — same 340px width as `.folders-pane` below, with
+     the traffic-light reservation as left padding and a 22px right pad
+     so its centred ViewSwitch lands in exactly the same screen (x, y)
+     as Reading mode's library-rail ViewSwitch. */
+  .top-strip-rail {
+    flex: 0 0 340px;
+    padding: 0 22px 0 var(--tl-pad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   .strip-spacer {
-    /* No longer pushes meta to the right — meta is absolutely
-       positioned now so the ViewSwitch can centre cleanly. Keep the
-       element so existing markup compiles; it just occupies no space. */
-    display: none;
+    flex: 1;
   }
   .top-meta {
-    position: absolute;
-    right: 22px;
-    top: 50%;
-    transform: translateY(-50%);
+    align-self: center;
     font-family: var(--mono);
     font-size: 10px;
     color: var(--ink-50);
