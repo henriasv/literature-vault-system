@@ -215,12 +215,35 @@
   const totalPagesForBookmark = $derived(
     pdfNavState.documentMeta[citekey]?.totalPages ?? 0,
   );
+  const currentPageForBookmark = $derived(
+    pdfNavState.documentMeta[citekey]?.currentPage ?? 0,
+  );
+  /* Bookmark page (1-based) iff a bookmark exists. */
+  const bookmarkPage = $derived(bookmarkRow ? bookmarkRow.pageIndex + 1 : 0);
+  /* True when bookmark is set AND it points at the page the user is
+   * currently viewing — drives the "hide move here, dim jump" state. */
+  const bookmarkOnCurrent = $derived(
+    bookmarkPage > 0 && bookmarkPage === currentPageForBookmark,
+  );
+
+  /* Percentage along the rail (0..100) for the bookmark + current-
+   * page positions. We clamp inside [3,97] so the tick + dot stay
+   * visible even at the extreme pages. */
+  function railPct(page: number, total: number): number {
+    if (total <= 0 || page <= 0) return 0;
+    if (total === 1) return 50;
+    const raw = ((page - 1) / (total - 1)) * 100;
+    return Math.max(3, Math.min(97, raw));
+  }
+  const bookmarkPct = $derived(railPct(bookmarkPage, totalPagesForBookmark));
+  const currentPct = $derived(railPct(currentPageForBookmark, totalPagesForBookmark));
 
   function onBookmarkJump(): void {
-    if (!bookmarkRow) return;
+    if (!bookmarkRow || bookmarkOnCurrent) return;
     onAnnotationRowClick(bookmarkRow);
   }
   function onBookmarkMoveHere(): void {
+    if (bookmarkOnCurrent) return;
     requestBookmarkMove(citekey);
   }
 
@@ -918,26 +941,50 @@
     <div class="bookmark-bar" role="group" aria-label="Bookmark">
       <span class="bm-icon" aria-hidden="true">📑</span>
       <span class="bm-label">BOOKMARK</span>
+
+      <!-- Progress rail: track + faint current-page tick + accent
+           bookmark dot. The dot is only drawn when a bookmark is set,
+           so the empty state can't imply a placed position. When
+           bookmark === current the tick is suppressed (the accent dot
+           sits on the same spot and reads cleaner). -->
+      <span
+        class="bm-rail"
+        aria-hidden="true"
+        style="--cur:{currentPct}%; --bm:{bookmarkPct}%"
+      >
+        <span class="bm-rail-track"></span>
+        {#if currentPageForBookmark > 0 && !bookmarkOnCurrent}
+          <span class="bm-rail-cur"></span>
+        {/if}
+        {#if bookmarkRow}
+          <span class="bm-rail-bm"></span>
+        {/if}
+      </span>
+
       {#if bookmarkRow}
         <span class="bm-page">
-          p.{bookmarkRow.pageIndex + 1}{#if totalPagesForBookmark > 0}<span class="bm-page-total">/{totalPagesForBookmark}</span>{/if}
+          p.{bookmarkPage}{#if totalPagesForBookmark > 0}<span class="bm-page-total">/{totalPagesForBookmark}</span>{/if}
         </span>
-        <span class="bm-sep" aria-hidden="true">—•—</span>
+        {#if !bookmarkOnCurrent}
+          <button
+            type="button"
+            class="bm-action"
+            onclick={onBookmarkMoveHere}
+            title="Move the bookmark to where you are reading now"
+          >move here</button>
+        {/if}
         <button
           type="button"
           class="bm-action"
-          onclick={onBookmarkMoveHere}
-          title="Move the bookmark to where you are reading now"
-        >move here</button>
-        <button
-          type="button"
-          class="bm-action"
+          class:disabled={bookmarkOnCurrent}
+          disabled={bookmarkOnCurrent}
           onclick={onBookmarkJump}
-          title="Scroll the PDF to the bookmark"
+          title={bookmarkOnCurrent
+            ? "The bookmark is already on the current page"
+            : "Scroll the PDF to the bookmark"}
         >jump</button>
       {:else}
         <span class="bm-empty">(none)</span>
-        <span class="bm-sep" aria-hidden="true">—•—</span>
         <button
           type="button"
           class="bm-action"
@@ -1380,38 +1427,93 @@
     text-transform: uppercase;
     color: var(--accent, #7a3a14);
   }
+  /* Mono page numbers — easier to scan against the small-caps label
+     and the serif actions; tabular-nums keeps "p.4/12" → "p.10/12"
+     from jittering as the user moves between pages. */
   .bm-page {
+    font-family: var(--mono);
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 11px;
     color: var(--ink, #1a1612);
   }
   .bm-page-total {
     color: var(--ink-50, rgba(26, 22, 18, 0.5));
   }
   .bm-empty {
+    font-family: var(--serif);
     font-style: italic;
+    font-size: 12px;
     color: var(--ink-50, rgba(26, 22, 18, 0.5));
   }
-  .bm-sep {
-    color: var(--ink-30, rgba(26, 22, 18, 0.3));
-    letter-spacing: 0;
+
+  /* Progress rail — 120px track, filled bookmark dot, faint current-
+     page tick. Positions live in `--cur` and `--bm` CSS custom
+     properties (percent along the track) set inline on the element so
+     Svelte's reactivity flows through cleanly. */
+  .bm-rail {
+    position: relative;
+    display: inline-block;
+    width: 120px;
+    height: 14px;
+    margin: 0 2px;
+    flex: 0 0 auto;
   }
+  .bm-rail-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 1px;
+    background: var(--ink-12, rgba(26, 22, 18, 0.12));
+  }
+  .bm-rail-cur {
+    position: absolute;
+    left: var(--cur, 0%);
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 1px;
+    height: 8px;
+    background: var(--ink-30, rgba(26, 22, 18, 0.3));
+  }
+  .bm-rail-bm {
+    position: absolute;
+    left: var(--bm, 0%);
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent, #7a3a14);
+    box-shadow: 0 0 0 2px var(--panel);
+  }
+
+  /* Actions read as italic-serif so they sit clearly distinct from the
+     small-caps label and the mono page numbers — they're prose-style
+     verbs, not buttons in the chrome sense. */
   .bm-action {
     appearance: none;
     background: transparent;
     border: 0;
-    padding: 2px 4px;
+    padding: 2px 6px;
     border-radius: 3px;
-    font: inherit;
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    text-transform: lowercase;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
     color: var(--accent, #7a3a14);
     cursor: pointer;
   }
-  .bm-action:hover {
+  .bm-action:hover:not(.disabled):not(:disabled) {
     background: var(--hover, rgba(26, 22, 18, 0.05));
+  }
+  .bm-action.disabled,
+  .bm-action:disabled {
+    color: var(--ink-30, rgba(26, 22, 18, 0.3));
+    cursor: default;
   }
 
   /* Rendered/Raw toggle — direction-b.jsx: padding 14px 22px 10px, gap 14,

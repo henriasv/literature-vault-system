@@ -23,6 +23,7 @@
     pdfNavState,
     consumeBookmarkMove,
     setDocumentTotalPages,
+    setDocumentCurrentPage,
   } from "../state/pdfNav.svelte";
 
   type Props = { documentId: string; citekey: string };
@@ -54,6 +55,13 @@
   $effect(() => {
     const n = scroll.state.totalPages ?? 0;
     if (n > 0) setDocumentTotalPages(citekey, n);
+  });
+  /* Also publish the current page so the right pane's bookmark
+   * progress rail can render a faint tick at the user's current
+   * reading position without having to mount its own scroll plugin. */
+  $effect(() => {
+    const p = scroll.state.currentPage ?? 0;
+    if (p > 0) setDocumentCurrentPage(citekey, p);
   });
 
   /* Listen for "move bookmark here" from the right-pane bookmark bar.

@@ -47,6 +47,10 @@ interface BookmarkMoveRequest {
 
 interface DocMeta {
   totalPages: number;
+  /** Most recently visible page (1-based). Published by the EmbedPDF
+   *  toolbar so the right pane's bookmark progress rail can render a
+   *  current-page tick without instantiating its own scroll plugin. */
+  currentPage: number;
 }
 
 interface PdfNavState {
@@ -117,9 +121,19 @@ export function consumeBookmarkMove(): void {
 }
 
 export function setDocumentTotalPages(citekey: string, totalPages: number): void {
-  /* Mutate-in-place rather than replacing the record so callers that
-   * touched the proxy for other citekeys don't see spurious invalidation. */
   const existing = pdfNavState.documentMeta[citekey];
   if (existing && existing.totalPages === totalPages) return;
-  pdfNavState.documentMeta = { ...pdfNavState.documentMeta, [citekey]: { totalPages } };
+  pdfNavState.documentMeta = {
+    ...pdfNavState.documentMeta,
+    [citekey]: { totalPages, currentPage: existing?.currentPage ?? 0 },
+  };
+}
+
+export function setDocumentCurrentPage(citekey: string, currentPage: number): void {
+  const existing = pdfNavState.documentMeta[citekey];
+  if (existing && existing.currentPage === currentPage) return;
+  pdfNavState.documentMeta = {
+    ...pdfNavState.documentMeta,
+    [citekey]: { totalPages: existing?.totalPages ?? 0, currentPage },
+  };
 }
