@@ -1635,7 +1635,7 @@
 
   .top-strip {
     flex: 0 0 auto;
-    height: 56px;
+    height: 38px;
     padding: 0 22px 0 var(--tl-pad);
     display: flex;
     align-items: center;
