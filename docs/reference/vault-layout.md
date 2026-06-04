@@ -8,6 +8,9 @@ Bibfiles/{citekey}.bib      BibTeX, one per paper
 PDFs/{citekey}.pdf          actual papers (often a symlink to cloud storage)
 SI/{citekey}-SI.pdf         supplementary information PDFs (one per paper, optional)
 Annotations/{citekey}.json  Viewer highlight sidecars (EmbedPDF JSON, one per paper)
+ReviewNotes/<project>/<stem>.md   student-assignment notes (Reviewing mode; see below)
+PDFs/reviewing/<project>/<stem>.pdf   student PDFs (Reviewing mode)
+Annotations/reviewing/<project>/<stem>.json   Reviewing-mode highlight sidecars
 Inbox/                      incoming PDFs; filed (moved out) once bib info resolves
 Projects/                   user-authored topic notes
 Collections/{slug}/index.md curated paper groupings (see "Collections" below)
@@ -102,6 +105,24 @@ All writers (the agent, the Viewer, any script) must:
 2. Replace only the `## Papers` block and the `updated:` field when changing membership.
 3. Preserve all other bytes byte-for-byte.
 4. Write via a tempfile in the same directory + `os.replace` / `fs::rename`.
+
+## Reviewing-mode subtree
+
+The Viewer's **Reviewing** view (grading student work) keeps its papers in a parallel subtree so they never appear in the main library, never enter `Bibfiles/`, and never pollute `library.bib`.
+
+```
+PDFs/reviewing/<project>/<stem>.pdf       student PDFs, grouped by project
+ReviewNotes/<project>/<stem>.md           one Markdown note per student paper
+Annotations/reviewing/<project>/<stem>.json   Viewer highlight sidecar (per paper)
+```
+
+Each "project" is a directory you create in the Viewer (e.g. `hon2200_v26_project2`); the `<stem>` is whatever the dropped PDF was named (`smith.pdf` → stem `smith`).
+
+The paper's identifier in the Viewer (and in the agent script API) is a synthetic citekey of shape `review:<project>:<stem>` — e.g. `review:hon2200_v26_project2:smith`. The `:` separator is illegal in filenames, so review citekeys can never collide with library citekeys.
+
+ReviewNote frontmatter is identical in shape to a library note (so the same parser works) plus a few review-only fields — see [note frontmatter](note-frontmatter.md#review-mode-fields).
+
+Renames and project-moves must touch all four artifacts in lockstep. Use [`rename_review_paper.py`](scripts.md) — direct file moves risk drift.
 
 ## Notes on the path
 

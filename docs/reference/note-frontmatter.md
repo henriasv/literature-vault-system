@@ -25,6 +25,25 @@ Every `PaperNotes/{citekey}.md` opens with a YAML frontmatter block. The canonic
 
 You can add other fields freely. The Viewer preserves them.
 
+## Review-mode fields
+
+Notes under `ReviewNotes/<project>/<stem>.md` use the same required fields as library notes (so the same parser works), with these conventions on top.
+
+The `citekey` is synthetic: `review:<project>:<stem>` — e.g. `review:hon2200_v26_project2:smith`.
+
+`sha256_pdf` is the empty string (`""`) — there's no dedup namespace for student PDFs.
+
+Additional optional fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `review_project` | string | Project slug. Matches the parent directory under `ReviewNotes/`. |
+| `bibtex_type` | string | `studentwork` for review papers — drives the manual-entry template (`viewer/src/lib/bibtex-templates.ts`). |
+| `done` | bool | `true` when the user has marked the paper as graded (Reviewing rail's **✓ Done reviewing** button). New filings start at `false`. |
+| `course`, `assignmentid`, `studentid`, `group` | string | Free-form metadata from the `@studentwork` BibTeX template. Set by the user during the post-drop metadata sheet or edited later. |
+
+Library-only fields (`journal`, `doi`, `arxiv_id`) are typically `null` or absent in review notes.
+
 ## Body sections
 
 The note body has three canonical sections; all writers preserve everything outside them byte-for-byte.

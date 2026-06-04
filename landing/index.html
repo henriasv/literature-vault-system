@@ -53,6 +53,7 @@
           <div class="ash-modetabs">
             <span class="mt active">READING</span>
             <span class="mt">ORGANIZING</span>
+            <span class="mt">REVIEWING</span>
           </div>
           <div class="ash-tabstrip">
             <span class="paper-tab active">
@@ -737,6 +738,41 @@ uv run scripts/embed_corpus.py
             tagged <span class="mono">cite:&lt;manuscript&gt;</span> surface under
             a <strong>Manuscripts</strong> sidebar section — a manuscript becomes
             a live view of every paper you've decided to cite from it.
+          </p>
+        </article>
+
+        <article class="card">
+          <p class="caps">Reviewing mode</p>
+          <h3>A grading workspace, on the side.</h3>
+          <p>
+            A third top-level mode for student assignments. PDFs and notes live in
+            a parallel <span class="mono">PDFs/reviewing/</span> +
+            <span class="mono">ReviewNotes/</span> subtree — never in the main
+            library, never in <span class="mono">library.bib</span>. Drop PDFs onto
+            a project, edit metadata, annotate, mark done. See
+            <a href="./docs.html#how-to/review-student-work">Review student work</a>.
+          </p>
+        </article>
+
+        <article class="card">
+          <p class="caps">Print, straight to the sheet</p>
+          <h3>⌘P prints; ⌘⇧P bakes annotations.</h3>
+          <p>
+            Native macOS print sheet via PDFKit (no Preview in the loop), with the
+            full Copies / Pages / Paper Size / Orientation / Scaling controls and a
+            live preview pane. ⌘⇧P runs the export pipeline first so highlights and
+            margin comments come out on paper.
+          </p>
+        </article>
+
+        <article class="card">
+          <p class="caps">Hyperlinks &amp; copy</p>
+          <h3>Click a citation; ⌘C copies text.</h3>
+          <p>
+            PDF hyperlinks open in your default browser via the OS. Selected
+            text copies on <span class="mono">⌘C</span>. Right-click any
+            paper for <strong>Copy formatted citation</strong> (APA-style) or
+            <strong>Copy BibTeX</strong>.
           </p>
         </article>
 

@@ -90,5 +90,8 @@ Day-to-day use:
 - **Organize:** switch to the "Organizing" view (top-left segmented switch), drag papers onto collections.
 - **Search:** ⌘T focuses the library search. Toggle `SEM` for semantic search (requires the embedding server).
 - **Read & note:** click a paper to open PDF + Markdown notes side by side. Edits auto-save on blur and on 2 s idle. ⌘⇧N inserts a timestamped section.
+- **Print:** ⌘P prints the original PDF straight to the macOS print sheet; ⌘⇧P bakes annotations in first. See [Print a paper](../how-to/print-a-paper.md).
+- **Copy:** ⌘C copies selected PDF text. Right-click a paper for **Copy formatted citation** (APA-style) or **Copy BibTeX**.
+- **Grade student work:** flip to the "Reviewing" mode (third segment). See [Review student work](../how-to/review-student-work.md).
 
 If something doesn't work, check [Troubleshoot](../how-to/troubleshoot.md).

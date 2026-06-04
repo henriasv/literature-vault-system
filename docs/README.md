@@ -20,6 +20,8 @@ A single linear walkthrough from clone to first paper filed.
 Task-oriented recipes. Each one assumes you've finished the tutorial.
 
 - [Adopt an existing folder of papers](how-to/adopt-existing-papers.md)
+- [Review student work](how-to/review-student-work.md) — the Viewer's third mode, for grading.
+- [Print a paper](how-to/print-a-paper.md) — ⌘P / ⌘⇧P straight to the macOS print sheet.
 - [Install the Librarian agent (Telegram intake)](how-to/install-the-librarian-agent.md)
 - [Install the embedding server (semantic search)](how-to/install-the-embedding-server.md)
 - [Connect a Telegram bot](how-to/connect-telegram.md)

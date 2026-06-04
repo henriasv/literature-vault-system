@@ -18,6 +18,7 @@ Both the Viewer (via the vault's `scripts` symlink) and the Librarian agent (via
 | `manual_file.py` | Manual filing path — user types a BibTeX entry into the Viewer's manual-entry form for items without a DOI. |
 | `batch_file_inbox.py` | Process every PDF in `Inbox/` through the filing pipeline. |
 | `reassign.py` | Re-file a misfiled paper under a new citekey, preserving user-written `## Why` / `## Notes` / `## Cleaned Notes`. |
+| `rename_review_paper.py` | Rename or move a Reviewing-mode paper (`review:<project>:<stem>` citekey). Atomic across PDF + ReviewNote + Annotation sidecar + frontmatter citekey, with rollback on partial failure. Pass `--new-stem` and/or `--new-project`. The librarian agent uses this for review-subtree renames — see [reference: vault layout](vault-layout.md#reviewing-mode-subtree). |
 | `append_note.py` | Append `### {ISO timestamp}\n{body}` under `## Notes` in `PaperNotes/{citekey}.md`. Body via stdin or `--body`. |
 | `build_library_bib.py` | Concatenate `Bibfiles/*.bib` sorted by filename → `library.bib`. Atomic, idempotent. |
 | `embed_corpus.py` | Build/refresh `embeddings.db` from notes (title + abstract + `## Why` + `## Cleaned Notes`). Incremental, content-hashed. Talks to `embed_server.py`. Auto-migrates `vec_papers` when the model name changes. |
