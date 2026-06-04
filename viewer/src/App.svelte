@@ -494,6 +494,10 @@
         void refreshCollections();
       });
       void refreshCollections();
+      /* Refresh the review-projects list at boot so the ViewSwitch's
+       * "Review N" badge shows the right count even before the user
+       * has flipped to the Reviewing pane. */
+      void refreshReviewProjects();
       // Warm-up: probe the embed server in the background so the semantic
       // toggle has a known state by the time the user reaches for it.
       void probeEmbedServer();
