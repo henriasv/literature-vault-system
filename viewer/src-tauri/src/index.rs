@@ -29,6 +29,7 @@ pub fn start_watcher(app: &AppHandle) -> Result<IndexWatcher> {
     let vault = vault_root();
     let notes_dir = paper_notes_dir();
     let review_dir = review_notes_dir();
+    let collections_dir = vault.join("Collections");
     let handle = app.clone();
 
     let (tx, rx) = mpsc::channel::<DebounceEventResult>();
@@ -56,12 +57,24 @@ pub fn start_watcher(app: &AppHandle) -> Result<IndexWatcher> {
             .watch(&review_dir, RecursiveMode::Recursive)
             .with_context(|| format!("watch {}", review_dir.display()))?;
     }
+    /* Collections/ — recursive because individual collections live as
+     * `Collections/<slug>/index.md` (one directory level deeper than the
+     * non-recursive vault-root watch can see). Without this, agent-side
+     * `Collections/<slug>/index.md` writes are invisible to the viewer
+     * until a reload. */
+    if collections_dir.is_dir() {
+        debouncer
+            .watcher()
+            .watch(&collections_dir, RecursiveMode::Recursive)
+            .with_context(|| format!("watch {}", collections_dir.display()))?;
+    }
 
     std::thread::spawn(move || {
         while let Ok(res) = rx.recv() {
             let Ok(events) = res else { continue };
             let mut library_hit = false;
             let mut review_hit = false;
+            let mut collections_hit = false;
             let mut notes_hit: Vec<String> = Vec::new();
             for ev in events {
                 if ev.path == index_target {
@@ -81,6 +94,8 @@ pub fn start_watcher(app: &AppHandle) -> Result<IndexWatcher> {
                     }
                 } else if ev.path.starts_with(&review_dir) {
                     review_hit = true;
+                } else if ev.path.starts_with(&collections_dir) {
+                    collections_hit = true;
                 }
             }
             if library_hit {
@@ -88,6 +103,9 @@ pub fn start_watcher(app: &AppHandle) -> Result<IndexWatcher> {
             }
             if review_hit {
                 let _ = handle.emit("review:changed", ());
+            }
+            if collections_hit {
+                let _ = handle.emit("collections:changed", ());
             }
             for citekey in notes_hit {
                 let _ = handle.emit("note:changed", NoteChanged { citekey });

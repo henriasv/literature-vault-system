@@ -373,6 +373,7 @@
   let stopAutoSave: (() => void) | null = null;
   let unlistenLibraryChanged: UnlistenFn | null = null;
   let unlistenReviewChanged: UnlistenFn | null = null;
+  let unlistenCollectionsChanged: UnlistenFn | null = null;
   let unlistenMenuOpenVault: UnlistenFn | null = null;
   let unlistenMenuNewVault: UnlistenFn | null = null;
   let unlistenMenuPrintPdf: UnlistenFn | null = null;
@@ -489,6 +490,9 @@
       unlistenReviewChanged = await listen("review:changed", () => {
         void refreshReviewProjects();
       });
+      unlistenCollectionsChanged = await listen("collections:changed", () => {
+        void refreshCollections();
+      });
       void refreshCollections();
       // Warm-up: probe the embed server in the background so the semantic
       // toggle has a known state by the time the user reaches for it.
@@ -509,6 +513,7 @@
     stopAutoSave?.();
     unlistenLibraryChanged?.();
     unlistenReviewChanged?.();
+    unlistenCollectionsChanged?.();
     unlistenMenuOpenVault?.();
     unlistenMenuNewVault?.();
     unlistenMenuPrintPdf?.();
