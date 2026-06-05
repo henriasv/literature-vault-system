@@ -47,7 +47,6 @@
       .startDragging()
       .catch((err) => console.error("startDragging (library strip) failed:", err));
   }
-  import ViewSwitch from "./ViewSwitch.svelte";
   import { tabsState, openInTab, openInNewTab } from "../state/tabs.svelte";
   import { prefsState } from "../state/prefs.svelte";
   import { writeText as clipboardWriteText } from "@tauri-apps/plugin-clipboard-manager";
@@ -337,18 +336,15 @@
 </script>
 
 <aside class="library">
-  <!-- 56px top strip — traffic-light clearance (--tl-pad) on the left,
-       then the Reading/Organizing view-switch as the very first child.
-       This matches the organize overlay's top-strip exactly, so the
-       ViewSwitch lands on the same screen (x, y) regardless of mode —
-       the cursor doesn't move when the user flips between them. -->
+  <!-- Top strip — empty container that just reserves vertical space
+       and draws the bottom border. The READ/ORGANIZE/REVIEW switch is
+       mounted globally in App.svelte (window-fixed position) so it
+       always lands at the same screen (x, y) regardless of mode. -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="top-strip"
     data-tauri-drag-region
-    onmousedown={onStripMouseDown}>
-    <ViewSwitch active="reading" />
-  </div>
+    onmousedown={onStripMouseDown}></div>
   <header class="masthead">
     <div class="caps">
       <span>The Vault</span>

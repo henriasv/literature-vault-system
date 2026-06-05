@@ -1,32 +1,27 @@
 <script lang="ts">
   /**
-   * Anchored READ / ORGANIZE / REVIEW segmented control.
+   * Global READ / ORGANIZE / REVIEW segmented control.
    *
-   * Lives at the very top-left of every view (above the library pane in
-   * reading, above the collections tree in organizing, above the project
-   * tree in reviewing). The DOM is positioned identically in all three —
-   * same height (28px), same padding, same gap from the traffic-light
-   * placeholder — so the cursor lands on the same (x, y) regardless of
-   * which view is active.
+   * Mounted once in App.svelte at a window-fixed position next to the
+   * macOS traffic lights. Single source of truth — no per-pane copy —
+   * so the labels can't drift between modes regardless of underlying
+   * pane layout (left rail in Read/Review, full-window overlay in
+   * Organize).
    *
-   * Visual: plain labels with a 1.5px accent underline on the active one
-   * (instead of a filled pill). REVIEW carries a small accent-coloured
-   * paper-count badge, sourced from reviewState — useful as an at-a-
-   * glance "n papers awaiting attention" in the chrome.
+   * Active state and click handling both read/write `prefsState.viewMode`
+   * directly so this component takes no props.
    */
-  import { prefsState, type ViewMode } from "../state/prefs.svelte";
+  import { prefsState } from "../state/prefs.svelte";
   import { reviewState } from "../state/review.svelte";
 
-  let { active }: { active: ViewMode } = $props();
-
-  /* Total review papers across every project. Refreshed via the
-   * `review:changed` watcher in App.svelte, so the badge stays current
-   * even when the rail is on another view. */
+  /* Total review papers across every project. Refreshed by the
+   * `review:changed` watcher in App.svelte and by the boot-time call,
+   * so the badge stays current regardless of which view is on screen. */
   const reviewCount = $derived(
     reviewState.projects.reduce((sum, p) => sum + p.paperCount, 0),
   );
 
-  function go(mode: ViewMode) {
+  function go(mode: "reading" | "organize" | "review") {
     if (prefsState.viewMode !== mode) {
       prefsState.viewMode = mode;
     }
@@ -36,23 +31,23 @@
 <div class="view-switch" role="tablist" aria-label="View">
   <button
     class="seg"
-    class:on={active === "reading"}
+    class:on={prefsState.viewMode === "reading"}
     role="tab"
-    aria-selected={active === "reading"}
+    aria-selected={prefsState.viewMode === "reading"}
     onclick={() => go("reading")}
     title="Reading view (PDF + notes)">Read</button>
   <button
     class="seg"
-    class:on={active === "organize"}
+    class:on={prefsState.viewMode === "organize"}
     role="tab"
-    aria-selected={active === "organize"}
+    aria-selected={prefsState.viewMode === "organize"}
     onclick={() => go("organize")}
     title="Organizing view (collections + library)">Organize</button>
   <button
     class="seg"
-    class:on={active === "review"}
+    class:on={prefsState.viewMode === "review"}
     role="tab"
-    aria-selected={active === "review"}
+    aria-selected={prefsState.viewMode === "review"}
     onclick={() => go("review")}
     title="Reviewing view (grade student work)">
     <span class="seg-label">Review</span>
@@ -63,18 +58,31 @@
 </div>
 
 <style>
-  /* Plain text labels, generous gap between them, accent underline on
-     the active one. No outer border or filled pill — the strip blends
-     into the surrounding masthead chrome. */
+  /* Window-fixed. Top + left numbers picked so the strip vertical
+     centre lines up with the traffic-light dots (their centre sits
+     ~14px from the top of the window on macOS with a 38px strip), and
+     so there's a comfortable horizontal gap past the rightmost dot
+     (the close/min/zoom group ends around x=78). z-index sits above
+     any pane content (organize overlay = 20, reader chrome ~10) but
+     below modals (~950). */
   .view-switch {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 38px;
+    padding-left: 100px;
+    padding-right: 20px;
+    z-index: 50;
     display: inline-flex;
     align-items: center;
-    background: transparent;
-    flex-shrink: 0;
     gap: 20px;
+    pointer-events: none; /* gap area shouldn't eat the strip's drag */
+    -webkit-app-region: drag;
   }
   .seg {
     position: relative;
+    pointer-events: auto;
+    -webkit-app-region: no-drag;
     padding: 1px 0 3px;
     background: transparent;
     color: var(--ink-30);
@@ -94,10 +102,6 @@
   .seg:hover:not(.on) {
     color: var(--ink-70);
   }
-  /* Active gets full-ink colour + a 1.5px accent underline that sits
-     directly under the baseline. The asymmetric top/bottom padding
-     above keeps the underline close to the text so the label's
-     visual centre isn't dragged downward by trailing whitespace. */
   .seg.on {
     color: var(--ink);
     cursor: default;

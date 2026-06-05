@@ -28,7 +28,6 @@
   import { openCtxMenu } from "../state/ctxmenu.svelte";
   import { openReviewMetaSheet } from "../state/reviewMetaEdit.svelte";
   import type { PaperMeta } from "../lib/vault";
-  import ViewSwitch from "./ViewSwitch.svelte";
 
   onMount(() => {
     void refreshReviewProjects();
@@ -142,15 +141,13 @@
 </script>
 
 <section class="review-rail">
-  <!-- Top strip — same shape (height + padding + view-switch position)
-       as Library's so the cursor lands on the same (x, y) when flipping. -->
+  <!-- Top strip — empty placeholder; the READ/ORGANIZE/REVIEW switch
+       is mounted globally in App.svelte (window-fixed). -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="top-strip"
     data-tauri-drag-region
-    onmousedown={onStripMouseDown}>
-    <ViewSwitch active="review" />
-  </div>
+    onmousedown={onStripMouseDown}></div>
 
   <header class="masthead">
     <div class="caps">

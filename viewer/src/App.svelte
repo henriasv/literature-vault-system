@@ -34,6 +34,7 @@
   import Toaster from "./panes/Toaster.svelte";
   import NoVault from "./panes/NoVault.svelte";
   import ContextMenu from "./panes/ContextMenu.svelte";
+  import ViewSwitch from "./panes/ViewSwitch.svelte";
   import ReidentifyModal from "./panes/ReidentifyModal.svelte";
   import { reidentifyState } from "./state/reidentify.svelte";
 
@@ -564,6 +565,14 @@
       <div class="organize-overlay"><CollectionsPanel /></div>
     {/if}
   </main>
+{/if}
+
+<!-- READ / ORGANIZE / REVIEW mode switch — window-fixed next to the
+     traffic lights so it lands at the same screen (x, y) regardless
+     of which pane layout is underneath. Hidden in focus mode and on
+     the NoVault landing. -->
+{#if vaultConfigured === true && !prefsState.focusMode}
+  <ViewSwitch />
 {/if}
 
 <!-- Global context menu (right-click → paper actions). Mounted at App root
